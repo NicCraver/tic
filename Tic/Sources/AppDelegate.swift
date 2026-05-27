@@ -3,6 +3,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("Tic 已启动")
+        AppSettings.migrateLegacyFormatIfNeeded()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(configurePopoverWindow(_:)),

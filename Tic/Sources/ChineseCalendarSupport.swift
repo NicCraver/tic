@@ -129,12 +129,31 @@ enum ChineseCalendarSupport {
         return DayAnnotation(subtitle: lunarDayLabel(for: date), badge: nil)
     }
 
-    static func cellSubtitle(for date: Date) -> String {
+    static func cellSubtitle(for date: Date, showSolarTerms: Bool = true) -> String {
         let ann = annotation(for: date)
         if let subtitle = ann.subtitle, ann.badge != nil || isSolarHoliday(subtitle) {
             return subtitle
         }
+        if showSolarTerms, let term = SolarTermSupport.name(for: date) {
+            return term
+        }
+        if let festival = solarFestivalName(for: date) {
+            return festival
+        }
         return lunarDayLabel(for: date)
+    }
+
+    static func solarTermName(for date: Date) -> String? {
+        SolarTermSupport.name(for: date)
+    }
+
+    static func hasAnnotation(for date: Date) -> Bool {
+        let ann = annotation(for: date)
+        if ann.badge != nil { return true }
+        if let subtitle = ann.subtitle, isSolarHoliday(subtitle) { return true }
+        if SolarTermSupport.hasTerm(on: date) { return true }
+        if solarFestivalName(for: date) != nil { return true }
+        return false
     }
 
     static func badge(for date: Date) -> DayBadge? {

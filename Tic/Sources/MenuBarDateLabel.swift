@@ -1,66 +1,62 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let menuBarSettingsDidChange = Notification.Name("menuBarSettingsDidChange")
+}
+
 struct MenuBarDateLabel: View {
-    @AppStorage("showSeconds") private var showSeconds = true
-    @AppStorage("dateFormatStyle") private var dateFormatStyle = DateFormatStyle.compact.rawValue
+    @AppStorage(AppSettings.showSecondsKey) private var showSeconds = true
+    @AppStorage(AppSettings.use24HourKey) private var use24Hour = true
     @State private var now = Date.now
+    @State private var settingsRevision = 0
+
+    private var blockOrder: [MenuBarBlock] {
+        _ = settingsRevision
+        return AppSettings.loadBlockOrder()
+    }
+
+    private var enabledBlocks: Set<MenuBarBlock> {
+        _ = settingsRevision
+        return AppSettings.loadEnabledBlocks()
+    }
 
     private var updateInterval: TimeInterval {
-        switch DateFormatStyle(rawValue: dateFormatStyle) ?? .compact {
-        case .compact, .timeOnly:
-            return showSeconds ? 1 : 60
-        case .dateOnly:
-            return 60
-        }
+        enabledBlocks.contains(.time) && showSeconds ? 1 : 60
+    }
+
+    private var showsIcon: Bool {
+        MenuBarDisplayComposer.showsIcon(order: blockOrder, enabled: enabledBlocks)
     }
 
     var body: some View {
-        Text(formattedDate(now))
-            .monospacedDigit()
-            .font(.system(size: 12))
-            .task(id: updateInterval) {
-                while !Task.isCancelled {
-                    now = .now
-                    try? await Task.sleep(for: .seconds(updateInterval))
-                }
+        HStack(spacing: 4) {
+            if showsIcon {
+                Image(systemName: "calendar.circle.fill")
+                    .font(.system(size: 12))
             }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        switch DateFormatStyle(rawValue: dateFormatStyle) ?? .compact {
-        case .compact:
-            let pattern = showSeconds ? "M月d日 HH:mm:ss" : "M月d日 HH:mm"
-            return Self.format(date, pattern: pattern)
-
-        case .timeOnly:
-            let pattern = showSeconds ? "HH:mm:ss" : "HH:mm"
-            return Self.format(date, pattern: pattern)
-
-        case .dateOnly:
-            return Self.format(date, pattern: "yyyy年M月d日")
+            Text(displayText)
+                .monospacedDigit()
+                .font(.system(size: 12))
+        }
+        .task(id: updateInterval) {
+            while !Task.isCancelled {
+                now = .now
+                try? await Task.sleep(for: .seconds(updateInterval))
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .menuBarSettingsDidChange)) { _ in
+            settingsRevision += 1
         }
     }
 
-    private static func format(_ date: Date, pattern: String) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = pattern
-        return formatter.string(from: date)
-    }
-}
-
-enum DateFormatStyle: String, CaseIterable, Identifiable {
-    case compact
-    case timeOnly
-    case dateOnly
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .compact: "5月27日 11:09:40"
-        case .timeOnly: "仅时间"
-        case .dateOnly: "仅日期"
-        }
+    private var displayText: String {
+        let text = MenuBarDisplayComposer.compose(
+            date: now,
+            order: blockOrder,
+            enabled: enabledBlocks,
+            showSeconds: showSeconds,
+            use24Hour: use24Hour
+        )
+        return text.isEmpty ? "Tic" : text
     }
 }

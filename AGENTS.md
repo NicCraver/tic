@@ -23,7 +23,7 @@ open Tic.xcodeproj  # Cmd+R 运行
 - 入口：`Tic/Sources/TicApp.swift`
 - 状态栏标签：`Tic/Sources/MenuBarDateLabel.swift`
 - 日历弹出层：`Tic/Sources/CalendarPopoverView.swift`
-- 设置：`Tic/Sources/SettingsView.swift`
+- 设置：`Tic/Sources/SettingsView.swift`（窗口见 `SettingsWindowManager.swift`，侧栏实现与踩坑见 [`docs/settings-sidebar.md`](docs/settings-sidebar.md)）
 - 登录启动：`Tic/Sources/LaunchAtLoginManager.swift`
 
 ## Versioning

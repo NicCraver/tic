@@ -5,11 +5,27 @@ struct CalendarPopoverView: View {
     @State private var displayedMonth = Date.now
     @State private var isMonthPickerPresented = false
     @State private var pickerYear: Int = Calendar.current.component(.year, from: .now)
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.colorScheme) private var systemColorScheme
+
+    @AppStorage(AppSettings.appThemeKey) private var appThemeRaw = AppTheme.system.rawValue
+    @AppStorage(AppSettings.showAnnotationDotsKey) private var showAnnotationDots = true
+    @AppStorage(AppSettings.showSolarTermsKey) private var showSolarTerms = true
 
     private let calendar = Calendar.current
     private let weekdays = ["日", "一", "二", "三", "四", "五", "六"]
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+
+    private var resolvedColorScheme: ColorScheme {
+        switch AppTheme(rawValue: appThemeRaw) ?? .system {
+        case .system: systemColorScheme
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    private var palette: CalendarPalette {
+        CalendarPopoverTheme.palette(for: resolvedColorScheme)
+    }
 
     private var gridDays: [CalendarGridDay] {
         ChineseCalendarSupport.monthGrid(for: displayedMonth)
@@ -38,8 +54,8 @@ struct CalendarPopoverView: View {
             }
             .padding(14)
         }
-        .background(CalendarPopoverTheme.background)
-        .preferredColorScheme(.dark)
+        .background(palette.background)
+        .preferredColorScheme(AppTheme(rawValue: appThemeRaw)?.colorScheme)
         .focusable()
         .focusEffectDisabled()
         .onKeyPress(.leftArrow) {
@@ -106,10 +122,10 @@ struct CalendarPopoverView: View {
         } label: {
             Text("\(displayedMonthNumber)月 \(displayedYear)")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(CalendarPopoverTheme.primaryText)
+                .foregroundStyle(palette.primaryText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 7)
-                .background(CalendarPopoverTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(palette.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isMonthPickerPresented, arrowEdge: .top) {
@@ -124,6 +140,7 @@ struct CalendarPopoverView: View {
                     pickerYear = calendar.component(.year, from: .now)
                 }
             )
+            .preferredColorScheme(AppTheme(rawValue: appThemeRaw)?.colorScheme)
         }
     }
 
@@ -141,12 +158,12 @@ struct CalendarPopoverView: View {
     private func contextPill(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(CalendarPopoverTheme.accent)
+            .foregroundStyle(palette.accent)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .overlay {
                 Capsule()
-                    .strokeBorder(CalendarPopoverTheme.accent.opacity(0.55), lineWidth: 1)
+                    .strokeBorder(palette.accent.opacity(0.55), lineWidth: 1)
             }
             .fixedSize()
     }
@@ -156,7 +173,7 @@ struct CalendarPopoverView: View {
             ForEach(weekdays, id: \.self) { label in
                 Text(label)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(CalendarPopoverTheme.secondaryText)
+                    .foregroundStyle(palette.secondaryText)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -175,16 +192,16 @@ struct CalendarPopoverView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(weekdayLabel(for: selectedDate))
                     .font(.system(size: 11))
-                    .foregroundStyle(CalendarPopoverTheme.secondaryText)
+                    .foregroundStyle(palette.secondaryText)
                 Text("\(calendar.component(.day, from: selectedDate))")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(CalendarPopoverTheme.primaryText)
+                    .foregroundStyle(palette.primaryText)
                     .monospacedDigit()
             }
             .frame(width: 64, alignment: .leading)
 
             Rectangle()
-                .fill(Color.white.opacity(0.12))
+                .fill(palette.separator)
                 .frame(width: 1)
                 .padding(.vertical, 6)
                 .padding(.horizontal, 14)
@@ -192,17 +209,22 @@ struct CalendarPopoverView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("\(ChineseCalendarSupport.lunarYearLabel(for: selectedDate)) \(ChineseCalendarSupport.lunarMonthDayLabel(for: selectedDate))")
                     .font(.system(size: 13))
-                    .foregroundStyle(CalendarPopoverTheme.primaryText)
+                    .foregroundStyle(palette.primaryText)
+                if showSolarTerms, let term = ChineseCalendarSupport.solarTermName(for: selectedDate) {
+                    Text(term)
+                        .font(.system(size: 12))
+                        .foregroundStyle(palette.accent)
+                }
                 Text("第\(ChineseCalendarSupport.weekOfYear(for: selectedDate))周")
                     .font(.system(size: 12))
-                    .foregroundStyle(CalendarPopoverTheme.secondaryText)
+                    .foregroundStyle(palette.secondaryText)
             }
 
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(CalendarPopoverTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(palette.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var bottomBar: some View {
@@ -214,8 +236,7 @@ struct CalendarPopoverView: View {
             Spacer()
 
             Button("设置…") {
-                openSettings()
-                NSApp.activate(ignoringOtherApps: true)
+                SettingsWindowManager.show()
             }
 
             Button("退出") {
@@ -224,14 +245,15 @@ struct CalendarPopoverView: View {
             .keyboardShortcut("q")
         }
         .controlSize(.small)
-        .foregroundStyle(CalendarPopoverTheme.secondaryText)
+        .foregroundStyle(palette.secondaryText)
     }
 
     private func dayCell(_ day: CalendarGridDay) -> some View {
         let isSelected = calendar.isDate(day.date, inSameDayAs: selectedDate)
         let dayNumber = calendar.component(.day, from: day.date)
-        let subtitle = ChineseCalendarSupport.cellSubtitle(for: day.date)
+        let subtitle = ChineseCalendarSupport.cellSubtitle(for: day.date, showSolarTerms: showSolarTerms)
         let badge = ChineseCalendarSupport.badge(for: day.date)
+        let showDot = showAnnotationDots && ChineseCalendarSupport.hasAnnotation(for: day.date)
 
         return Button {
             selectedDate = day.date
@@ -240,21 +262,30 @@ struct CalendarPopoverView: View {
             }
         } label: {
             ZStack(alignment: .topTrailing) {
-                VStack(spacing: 2) {
-                    Text("\(dayNumber)")
-                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
-                        .foregroundStyle(dayTextColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
-                    Text(subtitle)
-                        .font(.system(size: 9))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .foregroundStyle(daySubtitleColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 41)
-                .background {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? CalendarPopoverTheme.accent : CalendarPopoverTheme.cell.opacity(day.isInDisplayedMonth ? 1 : 0.35))
+                ZStack(alignment: .bottom) {
+                    VStack(spacing: 2) {
+                        Text("\(dayNumber)")
+                            .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(dayTextColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
+                        Text(subtitle)
+                            .font(.system(size: 9))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .foregroundStyle(daySubtitleColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 41)
+                    .background {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(isSelected ? palette.accent : palette.cell.opacity(day.isInDisplayedMonth ? 1 : 0.35))
+                    }
+
+                    if showDot {
+                        Circle()
+                            .fill(isSelected ? Color.white : palette.accent)
+                            .frame(width: 4, height: 4)
+                            .padding(.bottom, 3)
+                    }
                 }
 
                 if let badge {
@@ -264,7 +295,7 @@ struct CalendarPopoverView: View {
                         .padding(.horizontal, 3)
                         .padding(.vertical, 1)
                         .background(
-                            badge == .rest ? CalendarPopoverTheme.restBadge : CalendarPopoverTheme.workBadge,
+                            badge == .rest ? palette.restBadge : palette.workBadge,
                             in: RoundedRectangle(cornerRadius: 3, style: .continuous)
                         )
                         .offset(x: 2, y: 2)
@@ -283,9 +314,9 @@ struct CalendarPopoverView: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: icon == "circle" ? 8 : 11, weight: .semibold))
-                .foregroundStyle(emphasized ? CalendarPopoverTheme.accent : CalendarPopoverTheme.secondaryText)
+                .foregroundStyle(emphasized ? palette.accent : palette.secondaryText)
                 .frame(width: 26, height: 26)
-                .background(CalendarPopoverTheme.surface, in: Circle())
+                .background(palette.surface, in: Circle())
         }
         .buttonStyle(.plain)
         .contentShape(Circle())
@@ -346,11 +377,11 @@ struct CalendarPopoverView: View {
 
     private func dayTextColor(isSelected: Bool, inMonth: Bool) -> Color {
         if isSelected { return .white }
-        return inMonth ? CalendarPopoverTheme.primaryText : CalendarPopoverTheme.mutedText
+        return inMonth ? palette.primaryText : palette.mutedText
     }
 
     private func daySubtitleColor(isSelected: Bool, inMonth: Bool) -> Color {
         if isSelected { return .white.opacity(0.85) }
-        return inMonth ? CalendarPopoverTheme.secondaryText : CalendarPopoverTheme.mutedText
+        return inMonth ? palette.secondaryText : palette.mutedText
     }
 }

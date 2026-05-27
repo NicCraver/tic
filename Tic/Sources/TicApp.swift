@@ -12,9 +12,13 @@ struct TicApp: App {
             MenuBarDateLabel()
         }
         .menuBarExtraStyle(.window)
-
-        Settings {
-            SettingsView()
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("设置…") {
+                    SettingsWindowManager.show()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }
