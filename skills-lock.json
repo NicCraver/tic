@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "macos-app-scaffold": {
+      "source": "XueshiQiao/macos-app-scaffold",
+      "sourceType": "github",
+      "skillPath": "skills/macos-app-scaffold/SKILL.md",
+      "computedHash": "a3c0c0bd99b5bd410b5542e62711798698f2587d55d42eafd656991c49f77e39"
+    },
+    "macos-app-scaffold-enhance": {
+      "source": "XueshiQiao/macos-app-scaffold",
+      "sourceType": "github",
+      "skillPath": "skills/macos-app-scaffold-enhance/SKILL.md",
+      "computedHash": "0e932ba9edf660eafe0c383fa5926c58d3f817c26ab5ed375ee4eceb8c42507b"
+    },
+    "macos-app-scaffold-new": {
+      "source": "XueshiQiao/macos-app-scaffold",
+      "sourceType": "github",
+      "skillPath": "skills/macos-app-scaffold-new/SKILL.md",
+      "computedHash": "d71367b7024fa73c009539b6384e10f07e75ccef2325f636deef72a4901d191e"
+    }
+  }
+}
