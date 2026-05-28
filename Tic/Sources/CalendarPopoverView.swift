@@ -262,30 +262,27 @@ struct CalendarPopoverView: View {
             }
         } label: {
             ZStack(alignment: .topTrailing) {
-                ZStack(alignment: .bottom) {
-                    VStack(spacing: 2) {
-                        Text("\(dayNumber)")
-                            .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
-                            .foregroundStyle(dayTextColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
-                        Text(subtitle)
-                            .font(.system(size: 9))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .foregroundStyle(daySubtitleColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 41)
-                    .background {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(isSelected ? palette.accent : palette.cell.opacity(day.isInDisplayedMonth ? 1 : 0.35))
-                    }
-
+                VStack(spacing: 1) {
+                    Text("\(dayNumber)")
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(dayTextColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
+                    Text(subtitle)
+                        .font(.system(size: 9))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .foregroundStyle(daySubtitleColor(isSelected: isSelected, inMonth: day.isInDisplayedMonth))
                     if showDot {
                         Circle()
                             .fill(isSelected ? Color.white : palette.accent)
                             .frame(width: 4, height: 4)
-                            .padding(.bottom, 3)
+                            .padding(.top, 1)
                     }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 41)
+                .background {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelected ? palette.accent : palette.cell.opacity(day.isInDisplayedMonth ? 1 : 0.35))
                 }
 
                 if let badge {

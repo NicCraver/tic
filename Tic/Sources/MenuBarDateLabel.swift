@@ -29,7 +29,7 @@ struct MenuBarDateLabel: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(alignment: .center, spacing: 4) {
             if showsIcon {
                 Image(systemName: "calendar.circle.fill")
                     .font(.system(size: 12))
@@ -38,6 +38,7 @@ struct MenuBarDateLabel: View {
                 .monospacedDigit()
                 .font(.system(size: 12))
         }
+        .frame(height: 22)
         .task(id: updateInterval) {
             while !Task.isCancelled {
                 now = .now
