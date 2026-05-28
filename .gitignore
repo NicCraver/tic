@@ -21,3 +21,7 @@ Package.resolved
 *.swp
 *~
 *.profraw
+
+# Cursor / agent skills (not part of the app)
+.agents/
+skills-lock.json

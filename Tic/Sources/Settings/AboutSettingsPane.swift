@@ -33,19 +33,14 @@ struct AboutSettingsPane: View {
 
                 Section {
                     feedbackLink(
-                        title: "联系支持邮件",
-                        subtitle: "support@ticapp.com",
-                        url: URL(string: "mailto:support@ticapp.com")
+                        title: "反馈与问题",
+                        subtitle: "GitHub Issues",
+                        url: URL(string: "https://github.com/NicCraver/tic/issues")
                     )
                     feedbackLink(
-                        title: "访问官方网站",
-                        subtitle: "https://ticapp.com",
-                        url: URL(string: "https://ticapp.com")
-                    )
-                    feedbackLink(
-                        title: "去 App Store 评分",
-                        subtitle: "撰写评论鼓励我们",
-                        url: nil
+                        title: "开源仓库",
+                        subtitle: "github.com/NicCraver/tic",
+                        url: URL(string: "https://github.com/NicCraver/tic")
                     )
                 }
             }

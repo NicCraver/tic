@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build Release
+        run: |
+          xcodebuild build \
+            -scheme Tic \
+            -destination 'platform=macOS' \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY=-
+
+      - name: Package app
+        run: |
+          APP_PATH="build/DerivedData/Build/Products/Release/Tic.app"
+          test -d "$APP_PATH"
+          ditto -c -k --keepParent "$APP_PATH" "Tic-${GITHUB_REF_NAME}-macOS.zip"
+
+      - name: Extract release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            /^\#\# \[/ {
+              if ($0 ~ "\\[" ver "\\]") { show=1; next }
+              if (show) exit
+            }
+            show && /^## \[/ { exit }
+            show { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "See CHANGELOG.md for version ${GITHUB_REF_NAME}." > release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Tic-${{ github.ref_name }}-macOS.zip
+          body_path: release-notes.md
+          generate_release_notes: false
