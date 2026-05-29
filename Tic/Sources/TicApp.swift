@@ -7,7 +7,7 @@ struct TicApp: App {
     var body: some Scene {
         MenuBarExtra {
             CalendarPopoverView()
-                .frame(width: 342, height: 522)
+                .frame(width: 397)
         } label: {
             MenuBarDateLabel()
         }

@@ -21,7 +21,7 @@ struct MonthYearPickerPopover: View {
         }
         .padding(14)
         .frame(width: 223)
-        .background(palette.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(palette.cardBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private var yearHeader: some View {
@@ -79,59 +79,12 @@ struct MonthYearPickerPopover: View {
         isDot: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: isDot ? 6 : 10, weight: .semibold))
-                .foregroundStyle(palette.secondaryText)
-                .frame(width: 24, height: 24)
-        }
+        Button(label, systemImage: icon, action: action)
+            .labelStyle(.iconOnly)
+            .font(.system(size: isDot ? 6 : 10, weight: .semibold))
+            .foregroundStyle(palette.secondaryText)
+            .frame(width: 24, height: 24)
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-    }
-}
-
-struct CalendarPalette {
-    let background: Color
-    let surface: Color
-    let cell: Color
-    let accent: Color
-    let primaryText: Color
-    let secondaryText: Color
-    let mutedText: Color
-    let restBadge: Color
-    let workBadge: Color
-    let separator: Color
-}
-
-enum CalendarPopoverTheme {
-    static func palette(for scheme: ColorScheme) -> CalendarPalette {
-        switch scheme {
-        case .dark:
-            return CalendarPalette(
-                background: Color(red: 0.07, green: 0.07, blue: 0.08),
-                surface: Color(red: 0.14, green: 0.14, blue: 0.16),
-                cell: Color(red: 0.18, green: 0.18, blue: 0.20),
-                accent: Color(red: 0.0, green: 0.48, blue: 1.0),
-                primaryText: .white,
-                secondaryText: Color.white.opacity(0.45),
-                mutedText: Color.white.opacity(0.22),
-                restBadge: Color(red: 1.0, green: 0.32, blue: 0.32),
-                workBadge: Color(red: 0.35, green: 0.62, blue: 1.0),
-                separator: Color.white.opacity(0.12)
-            )
-        default:
-            return CalendarPalette(
-                background: Color(red: 0.95, green: 0.95, blue: 0.97),
-                surface: .white,
-                cell: Color(red: 0.92, green: 0.92, blue: 0.94),
-                accent: Color(red: 0.0, green: 0.48, blue: 1.0),
-                primaryText: Color(red: 0.1, green: 0.1, blue: 0.12),
-                secondaryText: Color.black.opacity(0.45),
-                mutedText: Color.black.opacity(0.25),
-                restBadge: Color(red: 1.0, green: 0.32, blue: 0.32),
-                workBadge: Color(red: 0.35, green: 0.62, blue: 1.0),
-                separator: Color.black.opacity(0.12)
-            )
-        }
     }
 }

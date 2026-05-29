@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tic 日历弹窗 — 5月参考 UI</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #050505;
+      --secondary: #626266;
+      --accent: #3481FF;
+      --selected: #3481FF;
+      --holiday-bg: #f2f6ff;
+      --work-bg: #f8f8f8;
+      --rest-badge: #3481FF;
+      --work-badge: #ff7a1a;
+      --dot: #b9b9bd;
+      --control-bg: rgba(0, 0, 0, .04);
+      --control-border: rgba(0, 0, 0, .08);
+      --control-fg: #1c1c1e;
+      --offset-bg: rgba(52, 129, 255, .1);
+      --offset-border: rgba(52, 129, 255, .18);
+      --details-bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --card-shadow: 0 1px 0 rgba(0, 0, 0, .02);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg: #111113;
+      --text: #f5f5f7;
+      --secondary: #a5a5ad;
+      --holiday-bg: rgba(52, 129, 255, .18);
+      --work-bg: rgba(255, 255, 255, .08);
+      --dot: #66666d;
+      --control-bg: rgba(255, 255, 255, .1);
+      --control-border: rgba(255, 255, 255, .14);
+      --control-fg: #f5f5f7;
+      --offset-bg: rgba(52, 129, 255, .2);
+      --offset-border: rgba(52, 129, 255, .32);
+      --details-bg: #1b1b1e;
+      --card-bg: #26262a;
+      --card-shadow: 0 1px 0 rgba(255, 255, 255, .04);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      transition: background .22s ease, color .22s ease;
+    }
+
+    .calendar {
+      position: relative;
+      width: 1200px;
+      min-height: 1331px;
+      padding: 26px 20px 58px;
+      background: var(--bg);
+      transition: background .22s ease;
+    }
+
+    .theme-bar {
+      position: absolute;
+      top: 28px;
+      right: 42px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .theme-toggle {
+      min-width: 116px;
+      height: 44px;
+      border: 1px solid var(--control-border);
+      border-radius: 22px;
+      background: var(--control-bg);
+      color: var(--control-fg);
+      font: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .18s ease, border-color .18s ease, color .18s ease;
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 3px solid rgba(52, 129, 255, .35);
+      outline-offset: 3px;
+    }
+
+    .theme-toggle:active {
+      transform: scale(.98);
+    }
+
+    .month-title {
+      display: flex;
+      align-items: flex-end;
+      gap: 18px;
+      margin: 16px 0 54px 48px;
+      font-size: 96px;
+      font-weight: 500;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .month-label {
+      line-height: 1.08;
+    }
+
+    .year {
+      display: inline-flex;
+      align-items: center;
+      height: 44px;
+      margin-bottom: 14px;
+      padding: 0 18px;
+      border: 1px solid var(--control-border);
+      border-radius: 22px;
+      background: var(--control-bg);
+      color: var(--secondary);
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .relative-offset {
+      display: inline-flex;
+      align-items: center;
+      height: 44px;
+      margin-bottom: 14px;
+      padding: 0 18px;
+      border: 1px solid var(--offset-border);
+      border-radius: 22px;
+      background: var(--offset-bg);
+      color: var(--accent);
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .relative-offset[hidden] {
+      display: none;
+    }
+
+    .weekdays,
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .weekdays {
+      align-items: center;
+      margin-bottom: 38px;
+      text-align: center;
+      color: var(--text);
+      font-size: 35px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .days {
+      row-gap: 65px;
+    }
+
+    .details-section {
+      margin-top: 56px;
+      margin-left: -20px;
+      margin-right: -20px;
+      padding: 28px 32px;
+      border-radius: 0 0 36px 36px;
+      background: var(--details-bg);
+    }
+
+    .lunar-card,
+    .upcoming-card {
+      width: 100%;
+      border-radius: 30px;
+      background: var(--card-bg);
+      box-shadow: var(--card-shadow);
+    }
+
+    .lunar-card {
+      padding: 40px 52px 42px;
+    }
+
+    .lunar-title {
+      color: var(--accent);
+      font-size: 72px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lunar-meta {
+      margin-top: 22px;
+      color: var(--secondary);
+      font-size: 38px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .upcoming-card {
+      margin-top: 40px;
+      padding: 42px 52px 36px;
+    }
+
+    .upcoming-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 44px;
+      align-items: center;
+      min-height: 166px;
+    }
+
+    .upcoming-item + .upcoming-item {
+      margin-top: 30px;
+    }
+
+    .upcoming-title {
+      color: var(--text);
+      font-size: 46px;
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .upcoming-date {
+      margin-top: 20px;
+      color: var(--secondary);
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .countdown {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      min-width: 130px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-number {
+      font-size: 76px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .countdown-unit {
+      margin-left: 12px;
+      font-size: 36px;
+      font-weight: 400;
+      line-height: 1;
+    }
+
+    .countdown-today {
+      color: var(--accent);
+      font-size: 46px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .empty-upcoming {
+      padding: 28px 0 34px;
+      color: var(--secondary);
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1;
+    }
+
+    .weekday,
+    .day-slot {
+      display: flex;
+      justify-content: center;
+    }
+
+    .day {
+      position: relative;
+      width: 144px;
+      height: 151px;
+      border: 0;
+      border-radius: 27px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 27px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .day:focus-visible {
+      outline: 4px solid rgba(52, 129, 255, .35);
+      outline-offset: 4px;
+    }
+
+    .day:active {
+      transform: scale(.98);
+    }
+
+    .day.empty {
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .day.holiday {
+      background: var(--holiday-bg);
+    }
+
+    .day.workday {
+      background: var(--work-bg);
+    }
+
+    .day.selected {
+      box-shadow: inset 0 0 0 4px var(--selected);
+    }
+
+    .day.today {
+      background: var(--selected);
+      box-shadow: none;
+      color: #ffffff;
+    }
+
+    .num {
+      display: block;
+      font-size: 58px;
+      font-weight: 600;
+      line-height: .92;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .weekend .num,
+    .holiday .num {
+      color: var(--accent);
+    }
+
+    .today .num {
+      color: #ffffff;
+    }
+
+    .sub {
+      margin-top: 13px;
+      max-width: 180px;
+      height: 34px;
+      color: var(--secondary);
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: 0;
+      text-align: center;
+      white-space: nowrap;
+      transition: opacity .18s ease;
+    }
+
+    .sub.is-switching {
+      opacity: 0;
+    }
+
+    .today .sub {
+      color: rgba(255, 255, 255, .94);
+    }
+
+    .badge {
+      position: absolute;
+      top: 12px;
+      right: 10px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 23px;
+      font-weight: 500;
+      line-height: 34px;
+      text-align: center;
+    }
+
+    .badge.rest {
+      background: var(--rest-badge);
+    }
+
+    .badge.work {
+      background: var(--work-badge);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: var(--dot);
+    }
+
+    .today .dot {
+      background: rgba(255, 255, 255, .78);
+    }
+
+    @media (max-width: 1199px) {
+      body {
+        display: block;
+      }
+
+      .calendar {
+        transform: scale(calc(100vw / 1200));
+        transform-origin: top left;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <main class="calendar" aria-label="2026年5月日历">
+    <div class="theme-bar">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-pressed="false">深色</button>
+    </div>
+
+    <h1 class="month-title">
+      <span class="month-label">5月</span><span class="year">2026</span><span class="relative-offset" id="relative-offset" aria-live="polite" hidden></span>
+    </h1>
+
+    <div class="weekdays" aria-hidden="true">
+      <div class="weekday">一</div>
+      <div class="weekday">二</div>
+      <div class="weekday">三</div>
+      <div class="weekday">四</div>
+      <div class="weekday">五</div>
+      <div class="weekday">六</div>
+      <div class="weekday">日</div>
+    </div>
+
+    <div class="days" id="calendar-grid"></div>
+
+    <section class="details-section" aria-label="农历详情和后续三个提醒">
+      <article class="lunar-card">
+        <div class="lunar-title" id="lunar-title">四月十三</div>
+        <div class="lunar-meta" id="lunar-meta">丙午马年 癸巳月 癸卯日</div>
+      </article>
+
+      <article class="upcoming-card">
+        <div class="upcoming-list" id="upcoming-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const days = [
+      { day: 1, sub: '劳动节', badge: 'rest', holiday: true, dot: true },
+      { day: 2, sub: '十六', badge: 'rest', holiday: true },
+      { day: 3, sub: '十七', badge: 'rest', holiday: true, dot: true },
+      { day: 4, sub: '青年节', badge: 'rest', holiday: true },
+      { day: 5, sub: '立夏', badge: 'rest', holiday: true, dot: true },
+      { day: 6, sub: '二十' },
+      { day: 7, sub: '廿一' },
+      { day: 8, sub: '微笑日' },
+      { day: 9, sub: '廿三', badge: 'work', workday: true },
+      { day: 10, sub: '母亲节', dot: true },
+      { day: 11, sub: '廿五' },
+      { day: 12, sub: '护士节' },
+      { day: 13, sub: '廿七' },
+      { day: 14, sub: '廿八' },
+      { day: 15, sub: '廿九' },
+      { day: 16, sub: '三十' },
+      { day: 17, sub: '四月', dot: true },
+      { day: 18, sub: '博物馆日' },
+      { day: 19, sub: '初三' },
+      { day: 20, sub: '初四' },
+      { day: 21, subs: ['小满', '国际茶日'], dot: true },
+      { day: 22, sub: '初六' },
+      { day: 23, sub: '初七', dot: true },
+      { day: 24, sub: '初八', dot: true },
+      { day: 25, sub: '初九' },
+      { day: 26, sub: '初十' },
+      { day: 27, sub: '十一', dot: true },
+      { day: 28, sub: '十二' },
+      { day: 29, sub: '十三', selected: true, today: true },
+      { day: 30, sub: '十四' },
+      { day: 31, sub: '十五', dot: true }
+    ];
+
+    const grid = document.getElementById('calendar-grid');
+    const upcomingList = document.getElementById('upcoming-list');
+    const lunarTitle = document.getElementById('lunar-title');
+    const lunarMeta = document.getElementById('lunar-meta');
+    const themeToggle = document.getElementById('theme-toggle');
+    const relativeOffset = document.getElementById('relative-offset');
+    const firstWeekdayOffset = 4;
+    const todayDay = days.find((info) => info.today)?.day || 29;
+    const rotatingSubs = [];
+    const upcomingEvents = [
+      { title: '劳动节', date: new Date(2026, 4, 1) },
+      { title: '青年节', date: new Date(2026, 4, 4) },
+      { title: '立夏', date: new Date(2026, 4, 5), useLunarDate: true },
+      { title: '世界微笑日', date: new Date(2026, 4, 8) },
+      { title: '母亲节', date: new Date(2026, 4, 10) },
+      { title: '护士节', date: new Date(2026, 4, 12) },
+      { title: '国际博物馆日', date: new Date(2026, 4, 18) },
+      { title: '国际茶日', date: new Date(2026, 4, 21) },
+      { title: '小满', date: new Date(2026, 4, 21), useLunarDate: true },
+      { title: '儿童节', date: new Date(2026, 5, 1) },
+      { title: '世界环境日', date: new Date(2026, 5, 5) },
+      { title: '芒种', date: new Date(2026, 5, 5), useLunarDate: true }
+    ];
+    const heavenlyStems = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    const earthlyBranches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const lunarMonths = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'];
+    const lunarDayNames = [
+      '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
+      '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
+      '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'
+    ];
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+    function setTheme(theme) {
+      const isDark = theme === 'dark';
+      document.body.dataset.theme = theme;
+      themeToggle.setAttribute('aria-pressed', String(isDark));
+      themeToggle.textContent = isDark ? '浅色' : '深色';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    function isWeekend(day) {
+      const weekday = new Date(2026, 4, day).getDay();
+      return weekday === 0 || weekday === 6;
+    }
+
+    function dateForDay(day) {
+      return new Date(2026, 4, day);
+    }
+
+    function daysBetween(start, end) {
+      return Math.round((end - start) / 86400000);
+    }
+
+    function lunarInfoForDate(date) {
+      const fourthMonthStart = new Date(2026, 4, 17);
+      const diff = daysBetween(fourthMonthStart, date);
+      const lunarMonth = diff >= 0 ? 4 : 3;
+      const lunarDay = diff >= 0 ? diff + 1 : diff + 31;
+      const monthName = lunarMonths[lunarMonth - 1];
+      const dayName = lunarDayNames[lunarDay - 1];
+
+      return {
+        month: lunarMonth,
+        day: lunarDay,
+        dayName,
+        title: `${monthName}月${dayName}`
+      };
+    }
+
+    function ganzhiDayForDate(date) {
+      const baseDate = new Date(2026, 4, 29);
+      const baseIndex = 39;
+      const index = (baseIndex + daysBetween(baseDate, date) + 6000) % 60;
+      return `${heavenlyStems[index % 10]}${earthlyBranches[index % 12]}`;
+    }
+
+    function ganzhiMonthForDate(date) {
+      if (date >= new Date(2026, 5, 5)) return '甲午';
+      if (date >= new Date(2026, 4, 5)) return '癸巳';
+      return '壬辰';
+    }
+
+    function dateLabelForEvent(event) {
+      const date = event.date;
+      if (event.useLunarDate) {
+        return `${lunarInfoForDate(date).title} | ${weekdays[date.getDay()]}`;
+      }
+
+      return `${date.getMonth() + 1}月${date.getDate()}日 | ${weekdays[date.getDay()]}`;
+    }
+
+    function createEmptyDay() {
+      const slot = document.createElement('div');
+      slot.className = 'day-slot';
+      slot.innerHTML = '<div class="day empty"></div>';
+      return slot;
+    }
+
+    function createDay(info) {
+      const slot = document.createElement('div');
+      const cell = document.createElement('div');
+      const num = document.createElement('span');
+      const sub = document.createElement('span');
+      const labels = info.subs || [info.sub];
+
+      slot.className = 'day-slot';
+      cell.className = 'day';
+      num.className = 'num';
+      sub.className = 'sub';
+      cell.dataset.day = info.day;
+      num.textContent = info.day;
+      sub.textContent = labels[0];
+
+      if (isWeekend(info.day)) cell.classList.add('weekend');
+      if (info.holiday) cell.classList.add('holiday');
+      if (info.workday) cell.classList.add('workday');
+      if (info.selected) cell.classList.add('selected');
+      if (info.today) cell.classList.add('today');
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('tabindex', '0');
+      cell.setAttribute('aria-pressed', String(Boolean(info.selected)));
+      cell.setAttribute('aria-label', `5月${info.day}日，${labels[0]}`);
+
+      cell.append(num, sub);
+
+      if (labels.length > 1) {
+        rotatingSubs.push({ element: sub, labels, index: 0 });
+      }
+
+      if (info.badge) {
+        const badge = document.createElement('span');
+        badge.className = `badge ${info.badge}`;
+        badge.textContent = info.badge === 'work' ? '班' : '休';
+        badge.title = badge.textContent;
+        cell.appendChild(badge);
+      }
+
+      if (info.dot) {
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.setAttribute('aria-hidden', 'true');
+        cell.appendChild(dot);
+      }
+
+      slot.appendChild(cell);
+      return slot;
+    }
+
+    function selectDay(day) {
+      const dayNumber = Number(day);
+      const next = grid.querySelector(`[data-day="${day}"]`);
+      if (!next) return;
+      const selected = grid.querySelector('.day.selected');
+      selected?.classList.remove('selected');
+      selected?.setAttribute('aria-pressed', 'false');
+      next.classList.add('selected');
+      next.setAttribute('aria-pressed', 'true');
+      updateRelativeOffset(dayNumber);
+      renderSelectedDetails(dayNumber);
+    }
+
+    function updateRelativeOffset(day) {
+      const diff = day - todayDay;
+      if (diff === 0) {
+        relativeOffset.textContent = '';
+        relativeOffset.hidden = true;
+        return;
+      }
+
+      relativeOffset.textContent = `${Math.abs(diff)}天${diff > 0 ? '后' : '前'}`;
+      relativeOffset.hidden = false;
+    }
+
+    function renderSelectedDetails(day) {
+      const date = dateForDay(day);
+      const lunar = lunarInfoForDate(date);
+      lunarTitle.textContent = lunar.title;
+      lunarMeta.textContent = `丙午马年 ${ganzhiMonthForDate(date)}月 ${ganzhiDayForDate(date)}日`;
+      renderUpcoming(day);
+    }
+
+    function createUpcomingItem(item) {
+      const row = document.createElement('div');
+      const countdownLabel = item.offset === 0 ? '今天' : `还有${item.offset}天`;
+      const countdownContent = item.offset === 0
+        ? '<span class="countdown-today">今天</span>'
+        : `<span class="countdown-number">${item.offset}</span><span class="countdown-unit">天</span>`;
+
+      row.className = 'upcoming-item';
+      row.innerHTML = `
+        <div>
+          <div class="upcoming-title">${item.title}</div>
+          <div class="upcoming-date">${item.date}</div>
+        </div>
+        <div class="countdown" aria-label="${countdownLabel}">${countdownContent}</div>
+      `;
+      return row;
+    }
+
+    function renderUpcoming(day) {
+      const selectedDate = dateForDay(day);
+      const items = upcomingEvents
+        .map((event, index) => ({
+          index,
+          title: event.title,
+          date: dateLabelForEvent(event),
+          offset: daysBetween(selectedDate, event.date)
+        }))
+        .filter((item) => item.offset >= 0)
+        .sort((a, b) => a.offset - b.offset || a.index - b.index)
+        .slice(0, 3);
+
+      upcomingList.replaceChildren();
+
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-upcoming';
+        empty.textContent = '暂无后续节日或节气';
+        upcomingList.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        upcomingList.appendChild(createUpcomingItem(item));
+      });
+    }
+
+    for (let i = 0; i < firstWeekdayOffset; i += 1) {
+      grid.appendChild(createEmptyDay());
+    }
+
+    days.forEach((info) => {
+      grid.appendChild(createDay(info));
+    });
+
+    const initialSelectedDay = days.find((info) => info.selected)?.day || todayDay;
+    updateRelativeOffset(initialSelectedDay);
+    renderSelectedDetails(initialSelectedDay);
+
+    grid.addEventListener('click', (event) => {
+      const day = event.target.closest('.day[data-day]')?.dataset.day;
+      if (day) selectDay(day);
+    });
+
+    grid.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const day = event.target.closest('.day[data-day]')?.dataset.day;
+      if (!day) return;
+      event.preventDefault();
+      selectDay(day);
+    });
+
+    setInterval(() => {
+      rotatingSubs.forEach((item) => {
+        item.index = (item.index + 1) % item.labels.length;
+        item.element.classList.add('is-switching');
+
+        window.setTimeout(() => {
+          item.element.textContent = item.labels[item.index];
+          item.element.classList.remove('is-switching');
+        }, 180);
+      });
+    }, 3000);
+  </script>
+</body>
+</html>

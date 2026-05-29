@@ -2,7 +2,10 @@ import Foundation
 
 /// 二十四节气（2025–2027 公历日期，用于月历副标题与标注圆点）
 enum SolarTermSupport {
+    private static let gregorian = Calendar(identifier: .gregorian)
     private static let table: [String: String] = buildTable()
+    private static let termDates: [String: Date] = buildTermDates()
+    private static let termsByYear: [Int: [(date: Date, name: String)]] = buildTermsByYear()
 
     static func name(for date: Date) -> String? {
         table[dateKey(date)]
@@ -12,12 +15,51 @@ enum SolarTermSupport {
         name(for: date) != nil
     }
 
+    static func date(of term: String, in year: Int) -> Date? {
+        termDates["\(year)-\(term)"]
+    }
+
+    static func terms(in year: Int) -> [(date: Date, name: String)] {
+        termsByYear[year] ?? []
+    }
+
     private static func dateKey(_ date: Date) -> String {
-        let cal = Calendar(identifier: .gregorian)
-        let y = cal.component(.year, from: date)
-        let m = cal.component(.month, from: date)
-        let d = cal.component(.day, from: date)
+        let y = gregorian.component(.year, from: date)
+        let m = gregorian.component(.month, from: date)
+        let d = gregorian.component(.day, from: date)
         return String(format: "%04d-%02d-%02d", y, m, d)
+    }
+
+    private static func date(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-")
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2])
+        else {
+            return nil
+        }
+        return gregorian.date(from: DateComponents(year: year, month: month, day: day))
+    }
+
+    private static func buildTermDates() -> [String: Date] {
+        table.reduce(into: [:]) { result, entry in
+            guard let date = date(fromKey: entry.key) else { return }
+            let year = gregorian.component(.year, from: date)
+            result["\(year)-\(entry.value)"] = date
+        }
+    }
+
+    private static func buildTermsByYear() -> [Int: [(date: Date, name: String)]] {
+        let grouped = table.reduce(into: [Int: [(date: Date, name: String)]]()) { result, entry in
+            guard let date = date(fromKey: entry.key) else { return }
+            let year = gregorian.component(.year, from: date)
+            result[year, default: []].append((date: date, name: entry.value))
+        }
+
+        return grouped.mapValues { terms in
+            terms.sorted { $0.date < $1.date }
+        }
     }
 
     private static func buildTable() -> [String: String] {
@@ -80,6 +122,13 @@ enum SolarTermSupport {
             "2027-11-07": "立冬", "2027-11-22": "小雪", "2027-12-07": "大雪", "2027-12-22": "冬至",
         ]
         for (key, value) in patches {
+            let yearPrefix = String(key.prefix(4)) + "-"
+            let staleKeys = result.keys.filter {
+                $0.hasPrefix(yearPrefix) && result[$0] == value
+            }
+            for existingKey in staleKeys {
+                result.removeValue(forKey: existingKey)
+            }
             result[key] = value
         }
     }

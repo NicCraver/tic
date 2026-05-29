@@ -11,7 +11,7 @@ struct CalendarSettingsPane: View {
                     Toggle(isOn: $showAnnotationDots) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("显示标注圆点")
-                            Text("节假日、节气等有标注的日期在月历格底部显示蓝点")
+                            Text("节假日、节气等有标注的日期在月历格底部显示圆点")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }

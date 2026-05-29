@@ -11,6 +11,13 @@ struct DayAnnotation {
 }
 
 enum ChineseCalendarSupport {
+    private struct CalendarEventCandidate {
+        let date: Date
+        let title: String
+        let dateLabel: String
+        let priority: Int
+    }
+
     private static let gregorian: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "zh_CN")
@@ -108,39 +115,108 @@ enum ChineseCalendarSupport {
         "2027-01-03": .init(subtitle: "元旦", badge: .rest),
     ]
 
-    private static let upcomingFestivals: [(month: Int, day: Int, name: String)] = [
-        (1, 1, "元旦"),
-        (2, 14, "情人节"),
-        (5, 1, "劳动节"),
-        (6, 1, "儿童节"),
-        (6, 19, "端午节"),
-        (10, 1, "国庆节"),
-        (12, 25, "圣诞节"),
+    private static let solarFestivalTemplates: [(month: Int, day: Int, cellTitle: String, eventTitle: String)] = [
+        (1, 1, "元旦", "元旦"),
+        (2, 14, "情人节", "情人节"),
+        (3, 8, "妇女节", "妇女节"),
+        (5, 4, "青年节", "青年节"),
+        (5, 8, "微笑日", "世界微笑日"),
+        (5, 12, "护士节", "护士节"),
+        (5, 18, "博物馆日", "国际博物馆日"),
+        (5, 21, "国际茶日", "国际茶日"),
+        (6, 1, "儿童节", "儿童节"),
+        (6, 5, "环境日", "世界环境日"),
+        (8, 1, "建军节", "建军节"),
+        (9, 10, "教师节", "教师节"),
+        (12, 24, "平安夜", "平安夜"),
+        (12, 25, "圣诞节", "圣诞节"),
     ]
 
+    private static let solarFestivalLookup: [String: (cellTitle: String, eventTitle: String)] = {
+        Dictionary(uniqueKeysWithValues: solarFestivalTemplates.map { template in
+            (
+                monthDayKey(month: template.month, day: template.day),
+                (cellTitle: template.cellTitle, eventTitle: template.eventTitle)
+            )
+        })
+    }()
+
+    private static let publicHolidayEvents: [CalendarEventCandidate] = {
+        annotations.compactMap { key, ann -> CalendarEventCandidate? in
+            guard ann.badge == .rest,
+                  let subtitle = ann.subtitle,
+                  let date = date(fromKey: key),
+                  isFirstAnnotatedHoliday(date, subtitle: subtitle)
+            else { return nil }
+
+            return CalendarEventCandidate(
+                date: date,
+                title: festivalDisplayName(subtitle),
+                dateLabel: gregorianDateLabel(for: date),
+                priority: 0
+            )
+        }
+        .sorted { lhs, rhs in
+            if !gregorian.isDate(lhs.date, inSameDayAs: rhs.date) {
+                return lhs.date < rhs.date
+            }
+            return lhs.priority < rhs.priority
+        }
+    }()
+
     static func annotation(for date: Date) -> DayAnnotation {
-        let key = dateKey(date)
-        if let stored = annotations[key] {
+        if let stored = storedAnnotation(for: date) {
             return stored
         }
-        if let festival = solarFestivalName(for: date) {
+        if let festival = solarFestival(for: date)?.cellTitle {
             return DayAnnotation(subtitle: festival, badge: nil)
         }
         return DayAnnotation(subtitle: lunarDayLabel(for: date), badge: nil)
     }
 
     static func cellSubtitle(for date: Date, showSolarTerms: Bool = true) -> String {
-        let ann = annotation(for: date)
-        if let subtitle = ann.subtitle, ann.badge != nil || isSolarHoliday(subtitle) {
-            return subtitle
+        cellSubtitles(for: date, showSolarTerms: showSolarTerms).first ?? lunarDayLabel(for: date)
+    }
+
+    static func cellSubtitles(for date: Date, showSolarTerms: Bool = true) -> [String] {
+        dayCellMetadata(for: date, showSolarTerms: showSolarTerms).subtitles
+    }
+
+    private static func dayCellMetadata(
+        for date: Date,
+        showSolarTerms: Bool
+    ) -> (subtitles: [String], hasAnnotation: Bool, badge: DayBadge?) {
+        var subtitles: [String] = []
+        let ann = storedAnnotation(for: date)
+        let solarTerm = showSolarTerms ? SolarTermSupport.name(for: date) : nil
+        let festival = solarFestival(for: date)
+
+        if let term = solarTerm {
+            subtitles.append(term)
         }
-        if showSolarTerms, let term = SolarTermSupport.name(for: date) {
-            return term
+        if let festival = festival?.cellTitle {
+            subtitles.append(festival)
         }
-        if let festival = solarFestivalName(for: date) {
-            return festival
+        if let subtitle = ann?.subtitle,
+           ann?.badge != .rest || isFirstAnnotatedHoliday(date, subtitle: subtitle) {
+            subtitles.append(subtitle)
         }
-        return lunarDayLabel(for: date)
+
+        let unique = subtitles.reduce(into: [String]()) { result, subtitle in
+            if !result.contains(subtitle) {
+                result.append(subtitle)
+            }
+        }
+        let hasAnnotation = ann?.badge != nil
+            || ann?.subtitle.map(isSolarHoliday) == true
+            || solarTerm != nil
+            || festival != nil
+
+        return (
+            subtitles: unique.isEmpty ? [lunarDayLabel(for: date)] : unique,
+            hasAnnotation: hasAnnotation,
+            badge: ann?.badge
+        )
     }
 
     static func solarTermName(for date: Date) -> String? {
@@ -152,7 +228,7 @@ enum ChineseCalendarSupport {
         if ann.badge != nil { return true }
         if let subtitle = ann.subtitle, isSolarHoliday(subtitle) { return true }
         if SolarTermSupport.hasTerm(on: date) { return true }
-        if solarFestivalName(for: date) != nil { return true }
+        if solarFestival(for: date) != nil { return true }
         return false
     }
 
@@ -164,15 +240,21 @@ enum ChineseCalendarSupport {
         let month = chinese.component(.month, from: date)
         let day = chinese.component(.day, from: date)
         let monthName = lunarMonthNames[safe: month - 1] ?? "\(month)月"
-        return monthName + lunarDayName(day)
+        let leapPrefix = chinese.dateComponents([.month], from: date).isLeapMonth == true ? "闰" : ""
+        return leapPrefix + monthName + lunarDayName(day)
     }
 
     static func lunarYearLabel(for date: Date) -> String {
-        let year = gregorian.component(.year, from: date)
-        let stem = heavenlyStems[(year - 4) % 10]
-        let branch = earthlyBranches[(year - 4) % 12]
-        let animal = zodiacAnimals[(year - 4) % 12]
+        let yearInCycle = chinese.component(.year, from: date)
+        let index = positiveModulo(yearInCycle - 1, 60)
+        let stem = heavenlyStems[index % 10]
+        let branch = earthlyBranches[index % 12]
+        let animal = zodiacAnimals[index % 12]
         return "\(stem)\(branch)\(animal)年"
+    }
+
+    static func lunarDetailMeta(for date: Date) -> String {
+        "\(lunarYearLabel(for: date)) \(sexagenaryMonthLabel(for: date))月 \(sexagenaryDayLabel(for: date))日"
     }
 
     static func weekOfYear(for date: Date) -> Int {
@@ -205,41 +287,94 @@ enum ChineseCalendarSupport {
     }
 
     static func nextFestivalCountdown(from date: Date) -> (name: String, days: Int)? {
+        upcomingEvents(from: date, limit: 1, includeSolarTerms: true)
+            .first
+            .map { ($0.title, $0.daysUntil) }
+    }
+
+    static func upcomingEvents(
+        from date: Date,
+        limit: Int = 3,
+        includeSolarTerms: Bool = true
+    ) -> [CalendarUpcomingEvent] {
         let start = gregorian.startOfDay(for: date)
-        let year = gregorian.component(.year, from: date)
+        let end = gregorian.date(byAdding: .day, value: 370, to: start) ?? start
+        var candidates: [CalendarEventCandidate] = []
+        candidates.reserveCapacity(includeSolarTerms ? 96 : 48)
 
-        var candidates: [(Date, String)] = []
-        for festival in upcomingFestivals {
-            var comps = DateComponents(year: year, month: festival.month, day: festival.day)
-            guard var festivalDate = gregorian.date(from: comps) else { continue }
-            if festivalDate < start {
-                comps.year = year + 1
-                festivalDate = gregorian.date(from: comps) ?? festivalDate
-            }
-            let name = festival.name
-            candidates.append((festivalDate, name))
+        appendPublicHolidayEvents(from: start, through: end, into: &candidates)
+        appendSolarFestivalEvents(from: start, through: end, into: &candidates)
+        if includeSolarTerms {
+            appendSolarTermEvents(from: start, through: end, into: &candidates)
         }
 
-        for (key, ann) in annotations {
-            guard ann.badge == .rest, let subtitle = ann.subtitle else { continue }
-            let parts = key.split(separator: "-")
-            guard parts.count == 3,
-                  let y = Int(parts[0]), let m = Int(parts[1]), let d = Int(parts[2]),
-                  var festivalDate = gregorian.date(from: DateComponents(year: y, month: m, day: d))
-            else { continue }
-            if festivalDate < start {
-                festivalDate = gregorian.date(from: DateComponents(year: y + 1, month: m, day: d)) ?? festivalDate
+        let unique = candidates
+            .filter { $0.date >= start && $0.date <= end }
+            .sorted {
+                if !gregorian.isDate($0.date, inSameDayAs: $1.date) {
+                    return $0.date < $1.date
+                }
+                return $0.priority < $1.priority
             }
-            let display = festivalDisplayName(subtitle)
-            if !candidates.contains(where: { $0.1 == display && gregorian.isDate($0.0, inSameDayAs: festivalDate) }) {
-                candidates.append((festivalDate, display))
+            .reduce(into: [CalendarEventCandidate]()) { result, candidate in
+                let alreadyIncluded = result.contains {
+                    $0.title == candidate.title && gregorian.isDate($0.date, inSameDayAs: candidate.date)
+                }
+                if !alreadyIncluded {
+                    result.append(candidate)
+                }
             }
+            .prefix(limit)
+
+        return unique.map { item in
+            let days = gregorian.dateComponents([.day], from: start, to: item.date).day ?? 0
+            return CalendarUpcomingEvent(
+                id: "\(dateKey(item.date))-\(item.title)",
+                title: item.title,
+                date: item.date,
+                daysUntil: days,
+                dateLabel: item.dateLabel
+            )
+        }
+    }
+
+    static func monthSlots(for month: Date) -> [CalendarMonthSlot] {
+        monthSlots(for: month, showSolarTerms: true)
+    }
+
+    static func monthSlots(for month: Date, showSolarTerms: Bool) -> [CalendarMonthSlot] {
+        let firstOfMonth = gregorian.date(from: gregorian.dateComponents([.year, .month], from: month))!
+        let daysInMonth = gregorian.range(of: .day, in: .month, for: firstOfMonth)!.count
+        let leading = positiveModulo(gregorian.component(.weekday, from: firstOfMonth) + 5, 7)
+        let monthKey = dateKey(firstOfMonth)
+        let monthNumber = gregorian.component(.month, from: firstOfMonth)
+
+        var slots: [CalendarMonthSlot] = []
+        slots.reserveCapacity(leading + daysInMonth)
+
+        for index in 0..<leading {
+            slots.append(CalendarMonthSlot.empty(monthKey: monthKey, index: index))
         }
 
-        guard let nearest = candidates.min(by: { $0.0 < $1.0 }) else { return nil }
-        let days = gregorian.dateComponents([.day], from: start, to: nearest.0).day ?? 0
-        guard days >= 0 else { return nil }
-        return (nearest.1, days)
+        for day in 1...daysInMonth {
+            let date = gregorian.date(byAdding: .day, value: day - 1, to: firstOfMonth)!
+            let weekday = gregorian.component(.weekday, from: date)
+            let metadata = dayCellMetadata(for: date, showSolarTerms: showSolarTerms)
+            slots.append(
+                .day(
+                    date,
+                    key: dateKey(date),
+                    monthNumber: monthNumber,
+                    dayNumber: day,
+                    isWeekend: weekday == 1 || weekday == 7,
+                    subtitles: metadata.subtitles,
+                    hasAnnotation: metadata.hasAnnotation,
+                    badge: metadata.badge
+                )
+            )
+        }
+
+        return slots
     }
 
     static func monthGrid(for month: Date) -> [CalendarGridDay] {
@@ -296,22 +431,193 @@ enum ChineseCalendarSupport {
         }
     }
 
-    private static func solarFestivalName(for date: Date) -> String? {
-        let month = gregorian.component(.month, from: date)
-        let day = gregorian.component(.day, from: date)
-        switch (month, day) {
-        case (3, 8): return "妇女节"
-        case (5, 4): return "青年节"
-        case (8, 1): return "建军节"
-        case (9, 10): return "教师节"
-        case (12, 24): return "平安夜"
-        case (12, 25): return "圣诞节"
-        default: return nil
+    private static func isSolarHoliday(_ name: String) -> Bool {
+        ["元旦", "劳动节", "国庆", "清明", "端午", "中秋", "春节", "除夕"].contains(where: name.contains)
+    }
+
+    private static func sexagenaryMonthLabel(for date: Date) -> String {
+        let year = gregorian.component(.year, from: date)
+        let lichun = dateOfSolarTerm("立春", in: year) ?? gregorian.date(from: DateComponents(year: year, month: 2, day: 4))!
+        let solarYear = date < lichun ? year - 1 : year
+        let branchIndex = solarMonthBranchIndex(for: date, in: year)
+        let yinStemIndex = yinMonthStemIndex(forYearStem: positiveModulo(solarYear - 4, 10))
+        let monthOffset = positiveModulo(branchIndex - 2, 12)
+        let stemIndex = positiveModulo(yinStemIndex + monthOffset, 10)
+        return heavenlyStems[stemIndex] + earthlyBranches[branchIndex]
+    }
+
+    private static func sexagenaryDayLabel(for date: Date) -> String {
+        let anchor = gregorian.date(from: DateComponents(year: 2026, month: 5, day: 29))!
+        let days = gregorian.dateComponents(
+            [.day],
+            from: gregorian.startOfDay(for: anchor),
+            to: gregorian.startOfDay(for: date)
+        ).day ?? 0
+        let index = positiveModulo(39 + days, 60)
+        return heavenlyStems[index % 10] + earthlyBranches[index % 12]
+    }
+
+    private static func solarMonthBranchIndex(for date: Date, in year: Int) -> Int {
+        let boundaries: [(term: String, branchIndex: Int)] = [
+            ("小寒", 1),
+            ("立春", 2),
+            ("惊蛰", 3),
+            ("清明", 4),
+            ("立夏", 5),
+            ("芒种", 6),
+            ("小暑", 7),
+            ("立秋", 8),
+            ("白露", 9),
+            ("寒露", 10),
+            ("立冬", 11),
+            ("大雪", 0),
+        ]
+
+        return boundaries.reduce(0) { current, boundary in
+            guard let boundaryDate = dateOfSolarTerm(boundary.term, in: year), date >= boundaryDate else {
+                return current
+            }
+            return boundary.branchIndex
         }
     }
 
-    private static func isSolarHoliday(_ name: String) -> Bool {
-        ["元旦", "劳动节", "国庆", "清明", "端午", "中秋", "春节", "除夕"].contains(where: name.contains)
+    private static func yinMonthStemIndex(forYearStem yearStem: Int) -> Int {
+        switch yearStem {
+        case 0, 5: return 2
+        case 1, 6: return 4
+        case 2, 7: return 6
+        case 3, 8: return 8
+        default: return 0
+        }
+    }
+
+    private static func dateOfSolarTerm(_ term: String, in year: Int) -> Date? {
+        SolarTermSupport.date(of: term, in: year)
+    }
+
+    private static func appendPublicHolidayEvents(
+        from start: Date,
+        through end: Date,
+        into candidates: inout [CalendarEventCandidate]
+    ) {
+        for event in publicHolidayEvents where event.date >= start && event.date <= end {
+            candidates.append(event)
+        }
+    }
+
+    private static func appendSolarFestivalEvents(
+        from start: Date,
+        through end: Date,
+        into candidates: inout [CalendarEventCandidate]
+    ) {
+        let startYear = gregorian.component(.year, from: start)
+        let endYear = gregorian.component(.year, from: end)
+
+        for year in startYear...endYear {
+            for template in solarFestivalTemplates {
+                guard let date = gregorian.date(from: DateComponents(year: year, month: template.month, day: template.day)) else {
+                    continue
+                }
+                guard date >= start && date <= end else { continue }
+
+                candidates.append(CalendarEventCandidate(
+                    date: date,
+                    title: template.eventTitle,
+                    dateLabel: gregorianDateLabel(for: date),
+                    priority: 1
+                ))
+            }
+
+            for event in dynamicSolarFestivals(in: year) {
+                guard event.date >= start && event.date <= end else { continue }
+
+                candidates.append(CalendarEventCandidate(
+                    date: event.date,
+                    title: event.eventTitle,
+                    dateLabel: gregorianDateLabel(for: event.date),
+                    priority: 1
+                ))
+            }
+        }
+    }
+
+    private static func appendSolarTermEvents(
+        from start: Date,
+        through end: Date,
+        into candidates: inout [CalendarEventCandidate]
+    ) {
+        let startYear = gregorian.component(.year, from: start)
+        let endYear = gregorian.component(.year, from: end)
+
+        for year in startYear...endYear {
+            for term in SolarTermSupport.terms(in: year) where term.date >= start && term.date <= end {
+                candidates.append(CalendarEventCandidate(
+                    date: term.date,
+                    title: term.name,
+                    dateLabel: lunarDateLabel(for: term.date),
+                    priority: 2
+                ))
+            }
+        }
+    }
+
+    private static func solarFestival(for date: Date) -> (cellTitle: String, eventTitle: String)? {
+        let month = gregorian.component(.month, from: date)
+        let day = gregorian.component(.day, from: date)
+        if let template = solarFestivalLookup[monthDayKey(month: month, day: day)] {
+            return template
+        }
+
+        let year = gregorian.component(.year, from: date)
+        return dynamicSolarFestivals(in: year).first {
+            gregorian.isDate($0.date, inSameDayAs: date)
+        }.map {
+            ($0.cellTitle, $0.eventTitle)
+        }
+    }
+
+    private static func dynamicSolarFestivals(
+        in year: Int
+    ) -> [(date: Date, cellTitle: String, eventTitle: String)] {
+        var result: [(date: Date, cellTitle: String, eventTitle: String)] = []
+        if let mother = nthWeekdayDate(year: year, month: 5, weekday: 1, ordinal: 2) {
+            result.append((mother, "母亲节", "母亲节"))
+        }
+        if let father = nthWeekdayDate(year: year, month: 6, weekday: 1, ordinal: 3) {
+            result.append((father, "父亲节", "父亲节"))
+        }
+        return result
+    }
+
+    private static func nthWeekdayDate(year: Int, month: Int, weekday: Int, ordinal: Int) -> Date? {
+        guard let firstOfMonth = gregorian.date(from: DateComponents(year: year, month: month, day: 1)) else {
+            return nil
+        }
+        let firstWeekday = gregorian.component(.weekday, from: firstOfMonth)
+        let offset = positiveModulo(weekday - firstWeekday, 7) + (ordinal - 1) * 7
+        return gregorian.date(byAdding: .day, value: offset, to: firstOfMonth)
+    }
+
+    private static func isFirstAnnotatedHoliday(_ date: Date, subtitle: String) -> Bool {
+        guard let previousDate = gregorian.date(byAdding: .day, value: -1, to: date) else {
+            return true
+        }
+        let previous = annotations[dateKey(previousDate)]
+        return previous?.badge != .rest || previous?.subtitle != subtitle
+    }
+
+    private static func gregorianDateLabel(for date: Date) -> String {
+        "\(gregorian.component(.month, from: date))月\(gregorian.component(.day, from: date))日 | \(weekdayLabel(for: date))"
+    }
+
+    private static func lunarDateLabel(for date: Date) -> String {
+        "\(lunarMonthDayLabel(for: date)) | \(weekdayLabel(for: date))"
+    }
+
+    private static func weekdayLabel(for date: Date) -> String {
+        let labels = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+        let index = gregorian.component(.weekday, from: date) - 1
+        return labels[safe: index] ?? ""
     }
 
     private static func festivalDisplayName(_ subtitle: String) -> String {
@@ -326,11 +632,41 @@ enum ChineseCalendarSupport {
         }
     }
 
+    private static func storedAnnotation(for date: Date) -> DayAnnotation? {
+        annotations[dateKey(date)]
+    }
+
+    private static func date(fromKey key: String) -> Date? {
+        let parts = key.split(separator: "-")
+        guard parts.count == 3,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]),
+              let day = Int(parts[2])
+        else {
+            return nil
+        }
+        return gregorian.date(from: DateComponents(year: year, month: month, day: day))
+    }
+
     private static func dateKey(_ date: Date) -> String {
-        let y = gregorian.component(.year, from: date)
-        let m = gregorian.component(.month, from: date)
-        let d = gregorian.component(.day, from: date)
-        return String(format: "%04d-%02d-%02d", y, m, d)
+        let components = gregorian.dateComponents([.year, .month, .day], from: date)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        let day = components.day ?? 0
+        return "\(year)-\(twoDigit(month))-\(twoDigit(day))"
+    }
+
+    private static func monthDayKey(month: Int, day: Int) -> String {
+        "\(twoDigit(month))-\(twoDigit(day))"
+    }
+
+    private static func twoDigit(_ value: Int) -> String {
+        value < 10 ? "0\(value)" : "\(value)"
+    }
+
+    private static func positiveModulo(_ value: Int, _ divisor: Int) -> Int {
+        let remainder = value % divisor
+        return remainder >= 0 ? remainder : remainder + divisor
     }
 }
 
