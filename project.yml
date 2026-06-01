@@ -17,6 +17,11 @@ settings:
     DEVELOPMENT_TEAM: ""
     SWIFT_STRICT_CONCURRENCY: targeted
 
+packages:
+  LunarSwift:
+    url: https://github.com/6tail/lunar-swift
+    from: "1.1.8"
+
 targets:
   Tic:
     type: application
@@ -24,6 +29,7 @@ targets:
     sources:
       - path: Tic/Sources
       - path: Tic/Assets.xcassets
+      - path: Tic/Resources/holidays
     info:
       path: Tic/Info.plist
       properties:
@@ -40,6 +46,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         COMBINE_HIDPI_IMAGES: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: LunarSwift
     entitlements:
       path: Tic/Resources/Tic.entitlements
 

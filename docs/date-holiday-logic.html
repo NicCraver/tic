@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic · 日期与节假日逻辑实现说明</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1d212b; --line:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#4c8dff; --accent-2:#7bd88f;
+    --crit:#ff5d5d; --major:#ffb454; --minor:#9aa3b2; --good:#7bd88f;
+    --code-bg:#0b0d12; --chip:#222734;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{display:grid; grid-template-columns:240px 1fr; gap:32px; max-width:1180px; margin:0 auto; padding:32px 24px 96px}
+  /* sidebar */
+  nav{position:sticky; top:24px; align-self:start; max-height:calc(100vh - 48px); overflow:auto; font-size:13.5px}
+  nav .title{font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-size:11px; margin:18px 0 8px}
+  nav a{display:block; color:var(--muted); padding:4px 10px; border-left:2px solid transparent; border-radius:0 6px 6px 0}
+  nav a:hover{color:var(--text); background:var(--panel); text-decoration:none}
+  nav a.sub{padding-left:22px; font-size:12.5px}
+  /* header */
+  header.hero{border:1px solid var(--line); background:linear-gradient(180deg,var(--panel-2),var(--panel)); border-radius:16px; padding:28px 30px; margin-bottom:28px}
+  header.hero h1{margin:0 0 6px; font-size:26px; letter-spacing:.02em}
+  header.hero p{margin:0; color:var(--muted)}
+  .meta{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+  .meta span{background:var(--chip); color:var(--muted); border:1px solid var(--line); padding:4px 10px; border-radius:999px; font-size:12px}
+  /* sections */
+  section{margin:0 0 30px}
+  h2{font-size:20px; margin:34px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line)}
+  h3{font-size:16px; margin:22px 0 8px}
+  p{margin:10px 0}
+  .card{border:1px solid var(--line); background:var(--panel); border-radius:12px; padding:16px 18px; margin:14px 0}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:880px){ .wrap{grid-template-columns:1fr} nav{position:static; max-height:none} .grid2{grid-template-columns:1fr} }
+  .fileref{display:inline-block; background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12.5px; color:#cdd5e1}
+  pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow:auto; font-size:12.8px; line-height:1.55}
+  pre code{color:#d7e0ec}
+  .kw{color:#c792ea} .str{color:#c3e88d} .com{color:#5c6678} .num{color:#f78c6c} .fn{color:#82aaff} .type{color:#ffcb6b}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:13.5px}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top}
+  th{background:var(--panel-2); color:var(--muted); font-weight:600}
+  ul.tight{margin:8px 0; padding-left:20px} ul.tight li{margin:4px 0}
+  /* badges */
+  .badge{display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; letter-spacing:.03em; vertical-align:middle}
+  .b-crit{background:rgba(255,93,93,.15); color:var(--crit); border:1px solid rgba(255,93,93,.4)}
+  .b-major{background:rgba(255,180,84,.14); color:var(--major); border:1px solid rgba(255,180,84,.4)}
+  .b-minor{background:rgba(154,163,178,.14); color:var(--minor); border:1px solid rgba(154,163,178,.4)}
+  .b-good{background:rgba(123,216,143,.14); color:var(--good); border:1px solid rgba(123,216,143,.4)}
+  /* defect block */
+  .defect{border:1px solid var(--line); border-left-width:4px; background:var(--panel); border-radius:10px; padding:14px 16px; margin:14px 0}
+  .defect.crit{border-left-color:var(--crit)} .defect.major{border-left-color:var(--major)} .defect.minor{border-left-color:var(--minor)} .defect.good{border-left-color:var(--good)}
+  td.ok{color:var(--good);font-weight:600}
+  .defect h4{margin:0 0 8px; font-size:15px; display:flex; gap:10px; align-items:center}
+  .defect dl{margin:0; display:grid; grid-template-columns:64px 1fr; gap:4px 12px}
+  .defect dt{color:var(--muted); font-size:12.5px; padding-top:2px}
+  .defect dd{margin:0}
+  /* flow diagram */
+  .flow{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin:16px 0}
+  .node{flex:1 1 150px; min-width:140px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px}
+  .node b{display:block; font-size:13px; margin-bottom:4px}
+  .node small{color:var(--muted); font-size:11.5px; line-height:1.4; display:block}
+  .arrow{align-self:center; color:var(--muted); font-size:20px}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 0; font-size:13px; color:var(--muted)}
+  .note{background:rgba(76,141,255,.08); border:1px solid rgba(76,141,255,.35); border-radius:10px; padding:12px 14px; margin:14px 0}
+  .warn{background:rgba(255,180,84,.07); border:1px solid rgba(255,180,84,.3); border-radius:10px; padding:12px 14px; margin:14px 0}
+  footer{color:var(--muted); font-size:12.5px; border-top:1px solid var(--line); margin-top:40px; padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="title">目录</div>
+  <a href="#overview">概览</a>
+  <a href="#sources">数据来源与依赖</a>
+  <a href="#flow">数据流：一个日期 → 一格</a>
+  <div class="title">模块分解</div>
+  <a class="sub" href="#m-display">A. 菜单栏日期/时间</a>
+  <a class="sub" href="#m-lunar">B. 农历与干支</a>
+  <a class="sub" href="#m-term">C. 二十四节气</a>
+  <a class="sub" href="#m-festival">D. 节日与倒计时</a>
+  <a class="sub" href="#m-grid">E. 月历网格与缓存</a>
+  <div class="title">缺陷</div>
+  <a class="sub" href="#fixed">已修复（①②）</a>
+  <a class="sub" href="#d-major">中等</a>
+  <a class="sub" href="#d-minor">轻微</a>
+  <a href="#good">做得好的地方</a>
+  <a href="#roadmap">改进建议</a>
+</nav>
+
+<main>
+  <header class="hero">
+    <h1>Tic · 日期与节假日逻辑实现说明</h1>
+    <p>当前实现如何计算公历 / 农历 / 干支 / 二十四节气 / 法定节假日与调休，以及存在哪些缺陷。</p>
+    <div class="meta">
+      <span>生成 2026-06-01 · 已更新（缺陷①②修复）</span>
+      <span>核心 ChineseCalendarSupport · SolarTermSupport · Holiday/HolidayStore</span>
+      <span>依赖 LunarSwift (SPM)</span>
+      <span>面向：维护者 / Agent</span>
+    </div>
+  </header>
+
+  <section id="overview">
+    <h2>概览</h2>
+    <p>日期相关能力由四类数据拼装而成，<b>能算的都本地算，不能算的（法定调休）才联网获取</b>：</p>
+    <table>
+      <tr><th>能力</th><th>来源</th><th>覆盖年份</th><th>说明</th></tr>
+      <tr><td>公历日期 / 星期 / 周数</td><td>系统 <code>Calendar(.gregorian)</code>（zh_CN）</td><td>任意</td><td>格式化、网格排布、周数</td></tr>
+      <tr><td>农历 年/月/日 + 闰月</td><td>系统 <code>Calendar(.chinese)</code></td><td>任意</td><td>苹果内置算法</td></tr>
+      <tr><td>干支（年/月/日）+ 生肖</td><td>自实现（节气 + 锚点推算）</td><td>任意*</td><td>日柱依赖单一硬编码锚点</td></tr>
+      <tr><td>二十四节气</td><td><b>LunarSwift</b> 天文算法</td><td>任意</td><td>已替换硬编码；并修复漏「冬至」别名 bug</td></tr>
+      <tr><td>公历固定/动态节日</td><td>自实现表 + 第 n 个周几</td><td>任意</td><td>元旦、劳动节、国庆、儿童节、母亲节…</td></tr>
+      <tr><td>农历传统节日（春节/端午/中秋…）</td><td><b>由 <code>.chinese</code> 农历推算</b>（含除夕）</td><td><b>任意</b></td><td class="ok">缺陷②已修复</td></tr>
+      <tr><td><b>法定节假日 / 调休（休/班）</b></td><td><b><code>HolidayStore</code></b>：打包 JSON + 联网 holiday-cn</td><td><b>打包 2024–2026 + 联网当年/次年</b></td><td class="ok">缺陷①已修复</td></tr>
+    </table>
+    <div class="note"><b>更新（2026-06-01）：两处严重缺陷已修复。</b>农历传统节日改由 <code>.chinese</code> 农历本地推算（含除夕）；法定节假日/调休改由 <span class="fileref">Holiday/HolidayStore.swift</span> 打包 JSON + 联网 holiday-cn 获取，去除年份上限。顺带修复了节气漏「冬至」的别名 bug。详见下文 <a href="#fixed">已修复</a>。</div>
+  </section>
+
+  <section id="sources">
+    <h2>数据来源与依赖</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>① 系统日历</h3>
+        <p><span class="fileref">ChineseCalendarSupport.swift:21–26</span></p>
+        <p><code>gregorian</code>（locale <code>zh_CN</code>）负责一切公历换算；<code>chinese</code>（<code>.chinese</code> 标识符）负责农历年/月/日与 <code>isLeapMonth</code>。农历月名通过下标映射到「正月…冬月、腊月」。</p>
+      </div>
+      <div class="card">
+        <h3>② LunarSwift（SPM）</h3>
+        <p><span class="fileref">SolarTermSupport.swift</span> · <span class="fileref">project.yml</span></p>
+        <p>仅 <code>SolarTermSupport</code> 引入。用 <code>Solar.fromYmdHms(...).lunar.jieQiTable</code> 得到交节表，过滤出标准 24 节气，按公历年缓存。</p>
+      </div>
+      <div class="card">
+        <h3>③ HolidayStore（调休）</h3>
+        <p><span class="fileref">Holiday/HolidayStore.swift</span></p>
+        <p>打包 <code>Resources/holidays/{2024,2025,2026}.json</code> 兜底 + 启动联网 holiday-cn（jsDelivr 主、GitHub raw 备）刷新当年/次年，缓存到 Application Support。归一为 <code>DayAnnotation</code>（休/班 + 节日名），<code>NSLock</code> 保护。</p>
+      </div>
+      <div class="card">
+        <h3>④ 公历节日表</h3>
+        <p><span class="fileref">ChineseCalendarSupport.swift:118–133, 579–590</span></p>
+        <p>固定日期节日（元旦、情人节、妇女节、青年节、儿童节、教师节、圣诞…）+ 动态节日（母亲节=5 月第 2 个周日、父亲节=6 月第 3 个周日），均可任意年份计算。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="flow">
+    <h2>数据流：一个日期是怎么变成日历里一格的</h2>
+    <p>月历每格内容由 <code>dayCellMetadata(for:showSolarTerms:)</code> 汇总 <span class="fileref">ChineseCalendarSupport.swift:185–220</span>：</p>
+    <div class="flow">
+      <div class="node"><b>输入日期</b><small>Date</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>查调休</b><small>HolidayStore<br>休/班 + 节日名</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>查节气</b><small>SolarTermSupport<br>LunarSwift</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>公历节日</b><small>solarFestival()</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>农历节日</b><small>lunarFestival()<br>含除夕</small></div>
+      <div class="arrow">→</div>
+      <div class="node"><b>兜底农历日</b><small>初一 / 廿三…</small></div>
+    </div>
+    <p>副标题优先级：<b>节气 → 公历节日 → 农历节日 → 调休节日名</b>，皆空时回退到农历日（除夕优先于法定「春节」名显示）。是否显示提示圆点由 <code>hasAnnotation</code> 决定（有 badge、法定/公历/农历节日或节气即为 true）。</p>
+    <pre><code><span class="com">// dayCellMetadata 摘要（已简化）</span>
+<span class="kw">if let</span> term = solarTerm { subtitles.append(term) }              <span class="com">// 节气</span>
+<span class="kw">if let</span> f = festival?.cellTitle { subtitles.append(f) }          <span class="com">// 公历节日</span>
+<span class="kw">if let</span> f = lunarFest?.cellTitle { subtitles.append(f) }         <span class="com">// 农历节日（含除夕）</span>
+<span class="kw">if let</span> s = ann?.subtitle { subtitles.append(s) }               <span class="com">// 调休（HolidayStore）</span>
+<span class="com">// 全空 → [lunarDayLabel(for: date)]（农历日）</span></code></pre>
+  </section>
+
+  <section id="m-display">
+    <h2>模块 A · 菜单栏日期 / 时间</h2>
+    <p><span class="fileref">MenuBarDisplayComposer.swift</span> · <span class="fileref">MenuBarLabelMetrics.swift</span></p>
+    <p>菜单栏文案为「模块化拼接」，块（<code>MenuBarBlock</code>）包括：日期 <code>M月d日</code>、星期 <code>EEE</code>、周数 <code>(n)</code>、农历（农历月日）、时间（12/24 小时、可选秒）。用 <code>DateFormatter</code>（locale <code>zh_CN</code>）格式化。</p>
+    <ul class="tight">
+      <li><b>定宽防抖</b>：<code>widestCompose</code> 生成最宽占位串，配合 <code>ImageRenderer</code> 定宽位图，秒数跳动时菜单栏项宽度不变（详见 <span class="fileref">docs/menu-bar-label.md</span>）。</li>
+      <li><b>刷新频率</b>：含秒 1 秒、否则 60 秒 <span class="fileref">MenuBarLabelMetrics.swift:38</span>。</li>
+      <li>周数取自 <code>ChineseCalendarSupport.weekOfYear</code>（见模块 E 的一致性问题）。</li>
+    </ul>
+  </section>
+
+  <section id="m-lunar">
+    <h2>模块 B · 农历与干支</h2>
+    <p><span class="fileref">ChineseCalendarSupport.swift:239–258, 413–492</span></p>
+    <ul class="tight">
+      <li><b>农历日 / 月日</b>：直接取 <code>chinese</code> 日历的 <code>.day</code> / <code>.month</code> + <code>isLeapMonth</code>，映射到「初一…三十」「正月…腊月」，闰月加「闰」前缀。<b>苹果算法，任意年份。</b></li>
+      <li><b>干支年</b> + 生肖：基于 <code>chinese.year</code> 在 60 甲子里取干支。</li>
+      <li><b>干支月</b>：以<b>立春</b>为年界、按节气定地支、由年干用「五虎遁」推月干，依赖 <code>SolarTermSupport</code> 的节气日期。</li>
+      <li><b>干支日</b>：<b>固定锚点</b> <code>2026-05-29 = 序号 39</code>，按与锚点的天数差在 60 内偏移 <span class="fileref">ChineseCalendarSupport.swift:449–458</span>。</li>
+      <li><b>相对日期</b>：今天 / 明天 / 昨天 / N 天前后。</li>
+    </ul>
+  </section>
+
+  <section id="m-term">
+    <h2>模块 C · 二十四节气</h2>
+    <p><span class="fileref">SolarTermSupport.swift:48–73</span></p>
+    <p>取「年初」「年末」两个农历实例的 <code>jieQiTable</code> 合并，过滤出 24 个标准中文名、且交节年份等于目标公历年的项，按 <code>startOfDay</code> 入两张表（按日期查名、按名查日期），并整年缓存。对外 API 与旧硬编码实现保持一致，故 <code>ChineseCalendarSupport</code> 无需改动。</p>
+    <pre><code><span class="kw">for</span> (key, solar) <span class="kw">in</span> lunar.jieQiTable {
+    <span class="kw">let</span> name = jieQiAliases[key] ?? key   <span class="com">// DONG_ZHI → 冬至</span>
+    <span class="kw">guard</span> standardNames.contains(name), solar.year == year <span class="kw">else</span> { <span class="kw">continue</span> }
+    byDate[day] = name; byName[name] = day
+}</code></pre>
+    <div class="note">相对旧版的明显改进：<b>从「2025–2027 硬编码查表」升级为天文算法</b>，任意年份有效。<br><b>已修复 bug：</b><code>jieQiTable</code> 把年末「冬至」存在英文别名 key <code>"DONG_ZHI"</code> 下，旧代码只收中文名 key，导致每年漏掉冬至（24→23）；现按别名归一后再按公历年过滤，单元测试已覆盖。</div>
+  </section>
+
+  <section id="m-festival">
+    <h2>模块 D · 节日与倒计时</h2>
+    <p><span class="fileref">ChineseCalendarSupport.swift</span></p>
+    <p><code>upcomingEvents(from:limit:)</code> 在 <b>start … start+370 天</b>窗口内汇集候选并排序。<b>已改为全部本地推算</b>（不再依赖调休数据），任意年份都有倒计时：</p>
+    <table>
+      <tr><th>来源</th><th>priority</th><th>取自</th></tr>
+      <tr><td>公历节日（固定 + 动态）</td><td>1</td><td><code>solarFestivalTemplates</code>（含元旦/劳动节/国庆）+ 母亲/父亲节</td></tr>
+      <tr><td>农历节日</td><td>1</td><td><code>appendLunarFestivalEvents</code>（春节/端午/中秋/元宵/七夕… 按农历日期）</td></tr>
+      <tr><td>二十四节气</td><td>2</td><td><code>SolarTermSupport.terms(in:)</code></td></tr>
+    </table>
+    <p>同名同日去重后取 <code>limit</code> 个；「下一个节日倒计时」即 <code>limit=1</code>。倒计时文案：今天 / 明天 / N 天后。</p>
+    <div class="note">改动：原先「法定节日（放假首日）」候选来自硬编码字典、止于 2027；现倒计时锚定<b>节日规范日</b>（春节=正月初一、国庆=10/1 等），任意年份有效。休/班角标仍由 <code>HolidayStore</code> 提供。</div>
+  </section>
+
+  <section id="m-grid">
+    <h2>模块 E · 月历网格与缓存</h2>
+    <p><span class="fileref">ChineseCalendarSupport.swift:341–411</span> · <span class="fileref">CalendarPopoverDataCache.swift</span></p>
+    <ul class="tight">
+      <li><b>实际使用的</b>是 <code>monthSlots(for:showSolarTerms:)</code>：<b>周一为首列</b>（<code>leading = (weekday + 5) % 7</code>），每格带 subtitles / badge（休/班）/ hasAnnotation。</li>
+      <li><b>缓存</b>：<code>CalendarPopoverDataCache</code> 对 monthSlots（上限 18）与 upcomingEvents（上限 90）做 LRU 缓存；节气另在 <code>SolarTermSupport</code> 内按年缓存。</li>
+      <li><b>注意</b>：另有 <code>monthGrid(for:)</code> + <code>CalendarGridDay</code>（<b>周日为首列</b>）——经核查<b>无人调用，是死代码</b>，且周首与实际网格相反。</li>
+    </ul>
+  </section>
+
+  <!-- ===================== DEFECTS ===================== -->
+  <section id="defects">
+    <h2>缺陷清单</h2>
+    <div class="legend">
+      <span><span class="badge b-good">已修复</span> 原两处严重缺陷 + 节气冬至</span>
+      <span><span class="badge b-major">中等</span> 正确性隐患 / 健壮性</span>
+      <span><span class="badge b-minor">轻微</span> 一致性 / 维护性</span>
+    </div>
+  </section>
+
+  <section id="fixed">
+    <h3><span class="badge b-good">已修复</span> 原严重缺陷（2026-06-01）</h3>
+
+    <div class="defect good">
+      <h4>① 法定节假日 / 调休：不再硬编码、不再止于 2027 <span class="badge b-good">已修复</span></h4>
+      <dl>
+        <dt>原问题</dt><dd>休/班与法定节日名来自内置字典，仅 2025–2027（2027 仅元旦），跨年自然失效、需逐年手工维护。</dd>
+        <dt>方案</dt><dd>新增 <span class="fileref">Holiday/HolidayStore.swift</span>：打包 <code>Resources/holidays/{2024,2025,2026}.json</code> 兜底；启动联网 holiday-cn（jsDelivr 主 + GitHub raw 备）刷新当年/次年，节流 24h，缓存到 Application Support；归一为 <code>DayAnnotation</code>，<code>NSLock</code> 保护。设置「日历」分区可关。</dd>
+        <dt>效果</dt><dd>当年/次年自动获取（国务院一公布即更新），离线有打包兜底，去除年份上限。</dd>
+      </dl>
+    </div>
+
+    <div class="defect good">
+      <h4>② 农历传统节日：改由 <code>.chinese</code> 农历本地推算（含除夕） <span class="badge b-good">已修复</span></h4>
+      <dl>
+        <dt>原问题</dt><dd>农历节日全靠硬编码字典；元宵/七夕/重阳/腊八/小年等根本不显示，春节/端午/中秋也止于 2027。</dd>
+        <dt>方案</dt><dd><code>ChineseCalendarSupport.lunarFestival</code> 用 <code>.chinese</code> 农历推算春节/元宵/龙抬头/端午/七夕/中元/中秋/重阳/腊八/小年；除夕按「次日为正月初一」判定；闰月不计。圆点与倒计时同步接入；并把劳动节/国庆补进公历固定节日表。</dd>
+        <dt>效果</dt><dd>任意年份显示完整农历节日；除夕优先于法定「春节」名显示。</dd>
+      </dl>
+    </div>
+
+    <div class="defect good">
+      <h4>＋ 顺带修复：二十四节气漏「冬至」 <span class="badge b-good">已修复</span></h4>
+      <dl>
+        <dt>原问题</dt><dd>LunarSwift <code>jieQiTable</code> 把年末冬至存于英文别名 key <code>"DONG_ZHI"</code>，旧代码只收中文名 → 每年 24 个节气漏掉冬至（实测返回 23）。</dd>
+        <dt>方案</dt><dd>别名归一（<code>DONG_ZHI→冬至</code> 等）后按公历年过滤；新增单元测试覆盖 2025–2027 各 24 项。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="d-major">
+    <h3><span class="badge b-major">中等</span> Major</h3>
+
+    <div class="defect major">
+      <h4>3. 干支「日柱」依赖单一硬编码锚点</h4>
+      <dl>
+        <dt>现象</dt><dd>所有日干支由 <code>2026-05-29 = 序号 39</code> 一个常量推算 <span class="fileref">ChineseCalendarSupport.swift:449–458</span>。</dd>
+        <dt>根因</dt><dd>锚点法 + 按民用午夜（civil midnight）换日，未处理传统「子时（23:00）换日」差异；锚点若错则全错。</dd>
+        <dt>影响</dt><dd>正确性集中在一个未被测试覆盖的魔法数上，脆弱。</dd>
+        <dt>建议</dt><dd>改用权威库（LunarSwift 亦可输出干支）替代锚点法，并补单元测试。</dd>
+      </dl>
+    </div>
+
+    <div class="defect major">
+      <h4>4. 无显式时区；而农历/节气本质是北京时间</h4>
+      <dl>
+        <dt>现象</dt><dd>除 <code>HolidayStore</code>（已固定 Asia/Shanghai）外，<code>ChineseCalendarSupport</code> / <code>SolarTermSupport</code> 仍用设备默认时区。</dd>
+        <dt>根因</dt><dd>LunarSwift 的交节/农历以东八区计算，与本地 <code>startOfDay</code> 混用。</dd>
+        <dt>影响</dt><dd>非 +08 时区用户在日界附近，节气/农历/调休归属的「当天」可能偏移一天。</dd>
+        <dt>建议</dt><dd>对农历/节气/节假日统一固定 <code>Asia/Shanghai</code> 时区计算。</dd>
+      </dl>
+    </div>
+
+    <div class="defect major">
+      <h4>5. 节气缓存线程不安全</h4>
+      <dl>
+        <dt>现象</dt><dd><code>nonisolated(unsafe) static var cache</code> 无锁可变字典 <span class="fileref">SolarTermSupport.swift:22</span>。</dd>
+        <dt>根因</dt><dd>用 <code>nonisolated(unsafe)</code> 绕过 Swift 6 并发检查；多线程/并发 Task 同时 <code>compute</code> 会数据竞争。</dd>
+        <dt>影响</dt><dd>目前多在主线程访问尚可，但属潜在脏读/崩溃隐患。</dd>
+        <dt>建议</dt><dd>加锁 / 改 actor / 预计算不可变表，或显式约束主线程访问。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="d-minor">
+    <h3><span class="badge b-minor">轻微</span> Minor</h3>
+
+    <div class="defect minor">
+      <h4>6. 两套网格构建器、周首相反；<code>monthGrid</code> 为死代码</h4>
+      <dl>
+        <dt>说明</dt><dd>在用的 <code>monthSlots</code> 周一首列；未使用的 <code>monthGrid</code> + <code>CalendarGridDay</code> 周日首列 <span class="fileref">ChineseCalendarSupport.swift:380–411, 673–678</span>。</dd>
+        <dt>建议</dt><dd>删除 <code>monthGrid</code> / <code>CalendarGridDay</code>，消除歧义与维护噪音。</dd>
+      </dl>
+    </div>
+
+    <div class="defect minor">
+      <h4>7. 周数与网格周首语义不一致</h4>
+      <dl>
+        <dt>说明</dt><dd><code>weekOfYear</code> 用 zh_CN locale 的周规则，而网格强制周一首列；两者周定义可能不一致。</dd>
+        <dt>建议</dt><dd>统一「每周第一天」的定义来源。</dd>
+      </dl>
+    </div>
+
+    <div class="defect minor">
+      <h4>8. 菜单栏农历占位未计入「闰」字宽度</h4>
+      <dl>
+        <dt>说明</dt><dd>最宽占位用「十一月三十」<span class="fileref">MenuBarDisplayComposer.swift:120</span>，闰月前缀「闰」未纳入，极端情况下可能轻微裁切。</dd>
+        <dt>建议</dt><dd>占位串考虑加「闰」前缀。</dd>
+      </dl>
+    </div>
+
+    <div class="defect minor">
+      <h4>9. 测试覆盖薄</h4>
+      <dl>
+        <dt>说明</dt><dd><span class="fileref">TicTests/TicTests.swift</span> 已新增农历节日（元宵/除夕）与打包节假日（休/班）测试；干支、闰月、远年节气等仍无覆盖。</dd>
+        <dt>建议</dt><dd>补关键路径与边界（闰月、跨年、远年）测试。</dd>
+      </dl>
+    </div>
+
+    <div class="defect minor">
+      <h4>10. <code>isFirstAnnotatedHoliday</code> 对数据缺口敏感（已大幅缓解）</h4>
+      <dl>
+        <dt>说明</dt><dd>靠「看前一天」判断放假首日，现仅用于<b>月历格</b>是否重复显示节日名（已不再参与倒计时）；数据改由 holiday-cn 连续提供，缺口风险大幅降低。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="good">
+    <h2><span class="badge b-good">优点</span> 实现得不错的地方</h2>
+    <ul class="tight">
+      <li><b>节气算法化</b>：LunarSwift 天文算法，任意年份正确（已修复漏冬至），按年缓存。</li>
+      <li><b>调休数据动态化</b>：<code>HolidayStore</code> 打包 + 联网 holiday-cn + 缓存兜底，去除年份上限、线程安全。</li>
+      <li><b>农历节日本地推算</b>：春节/元宵/端午/七夕/中秋…（含除夕）；倒计时锚定节日规范日，任意年份有效。</li>
+      <li><b>菜单栏定宽防抖</b>：ImageRenderer 定宽位图 + 模板图随壁纸/深浅色自动着色。</li>
+      <li><b>性能缓存</b>：月历 slots 与倒计时结果 LRU 缓存，节气整年缓存，避免重复计算。</li>
+      <li><b>关注点分离</b>：节气、农历节日、法定调休（HolidayStore）解耦，对外 API 稳定。</li>
+    </ul>
+  </section>
+
+  <section id="roadmap">
+    <h2>改进建议（按收益排序）</h2>
+    <table>
+      <tr><th>#</th><th>项目</th><th>对应缺陷</th><th>收益</th></tr>
+      <tr><td class="ok">✅</td><td>联网调休数据源 + 离线兜底（<code>HolidayStore</code>，主源 holiday-cn）</td><td>①、10</td><td>已完成 · 去除年份上限；3 源冗余待加</td></tr>
+      <tr><td class="ok">✅</td><td>农历节日表（从 .chinese 推算，含除夕）</td><td>②</td><td>已完成</td></tr>
+      <tr><td>3</td><td>统一固定 Asia/Shanghai 时区（<code>HolidayStore</code> 已用，其余待统一）</td><td>4</td><td>中 · 修正跨时区日界偏移</td></tr>
+      <tr><td>4</td><td>干支日改用库计算 + 测试</td><td>3</td><td>中 · 去除魔法锚点</td></tr>
+      <tr><td>5</td><td>节气缓存线程安全 + 删死代码</td><td>5、6</td><td>低 · 健壮性与整洁度</td></tr>
+    </table>
+    <div class="note">联网数据源的完整设计（统一模型、3 源冗余、CDN 兜底、缓存与隐私开关）见 <span class="fileref">docs/holiday-data-source.md</span>。</div>
+  </section>
+
+  <footer>
+    本文据 2026-06-01 工作区源码生成，文件行号以当时 <span class="fileref">Tic/Sources/</span> 为准；改动相关代码后请同步更新。
+  </footer>
+</main>
+</div>
+</body>
+</html>

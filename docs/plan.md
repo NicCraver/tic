@@ -8,7 +8,7 @@
 | 模块 | 状态 | 说明 |
 |------|------|------|
 | 菜单栏显示 | ✅ | 三种预设格式（月日+时间 / 仅时间 / 仅日期）、可选秒数 |
-| 日历弹窗 | ✅ | 月历网格、农历/节假日、休/班、月份选择器、相对日期与节日倒计时；节气、标注圆点待做 |
+| 日历弹窗 | ✅ | 月历网格、农历/节假日、休/班、月份选择器、相对日期与节日倒计时、节气、标注圆点 |
 | 登录启动 | ✅ | `LaunchAtLoginManager` |
 | 设置页 | ✅ | 侧栏 + 6 分区（通用/外观/菜单栏/日历/快捷键/关于） |
 | 日程/提醒 | — | **不做**（R1–R3，无 EventKit） |
@@ -86,7 +86,7 @@
 | C3 | 相对日期 / 节日倒计时 | 今天、N 天前/后、下一节日 | ✅ | — | — |
 | C4 | 选中日期详情 | 星期、公历、农历、周数 | ✅ | — | — |
 | C5 | 每周第一天 | 与 G3 联动（G3 不做则不做） | ❌ | 不做 | — |
-| C6 | 调休数据维护 | 当前 2025–2027 静态数据 | P2 | 中 |
+| C6 | 调休数据维护 | `HolidayStore` 联网（holiday-cn）+ 打包兜底；方案见 [`holiday-data-source.md`](holiday-data-source.md) | ✅ | P2 | 中 |
 | C7 | 键盘导航 | ←→ 日、↑↓ 周、⌥←→ 月 | ✅ | — | — |
 | C8 | 打开定位今天 | 默认行为 | ✅ | — | — |
 | C9 | 标注圆点 | 与 G5 联动：节假日、节气等日期显示圆点 | ❌ | P2 | 中 |
@@ -159,7 +159,7 @@
 
 - [ ] A3 / A4 弹窗位置与对齐
 - [ ] G6 设置页退出按钮
-- [ ] C6 节假日数据更新机制
+- [x] C6 节假日数据更新机制（`HolidayStore`：打包 + 联网 holiday-cn）
 - [ ] S1 反馈、S2 更新
 
 ### 明确不做（除非另行确认）
@@ -176,7 +176,7 @@
 
 | 元素 | 规范 |
 |------|------|
-| 布局 | `NavigationSplitView` + 全高侧栏（详见 [`settings-sidebar.md`](settings-sidebar.md)） |
+| 布局 | AppKit `NSSplitViewController` + 全高侧栏（详见 [`settings-sidebar.md`](settings-sidebar.md)） |
 | 背景 | 深色 `#121212` 量级，分组卡片略浅 |
 | 圆角 | 分组容器 10–12pt |
 | 强调色 | 默认 `#007AFF`，后续接 A2 |
@@ -189,7 +189,7 @@
 
 | 区域 | 文件 |
 |------|------|
-| 设置入口 | `Tic/Sources/SettingsView.swift` → 拆分为多 Pane |
+| 设置入口 | `Tic/Sources/Settings/SettingsSplitViewController.swift` + 各 `*SettingsViewController.swift`（AppKit） |
 | 菜单栏文案 | `Tic/Sources/MenuBarDateLabel.swift` |
 | 弹窗主题/周起始 | `Tic/Sources/CalendarPopoverView.swift` |
 | 周数/农历 | `Tic/Sources/ChineseCalendarSupport.swift` |
@@ -222,3 +222,5 @@ v1.1: C10, G5, C9
 | 2026-05-27 | R1–R3、S4 统一标为不做 |
 | 2026-05-27 | P1–P2 商业化/内购标为不做 |
 | 2026-05-27 | 实现 MVP + v1.1 主体（设置 UI、菜单栏块、节气、圆点、主题） |
+| 2026-06-01 | 设置改纯 AppKit（`NSSplitViewController`）；节气改 LunarSwift 算法（不再硬编码 2025–2027）；C6 增联网数据源方案；同步技术触点路径 |
+| 2026-06-01 | C6 落地 `HolidayStore`（打包 JSON + 联网 holiday-cn + 缓存）；农历节日改本地推算（含除夕）；修复节气漏「冬至」别名 bug |

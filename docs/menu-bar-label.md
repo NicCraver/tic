@@ -31,7 +31,7 @@ flowchart LR
 | [`MenuBarLabelMetrics.swift`](../Tic/Sources/MenuBarLabelMetrics.swift) | 当前文案、定宽 `labelWidth` / `textSlotWidth`、刷新间隔 |
 | [`MenuBarDisplayComposer.swift`](../Tic/Sources/MenuBarDisplayComposer.swift) | 模块拼接、`widestCompose` / `sizingText`（全 `8` 占位）、量宽、字重 |
 | [`TicApp.swift`](../Tic/Sources/TicApp.swift) | `MenuBarExtra` + `.menuBarExtraStyle(.window)` |
-| [`MenuBarSettingsPane.swift`](../Tic/Sources/Settings/MenuBarSettingsPane.swift) | 设置变更时 `post(.menuBarSettingsDidChange)` |
+| [`MenuBarSettingsViewController.swift`](../Tic/Sources/Settings/MenuBarSettingsViewController.swift) | 设置变更时 `post(.menuBarSettingsDidChange)` |
 
 ### 定宽规则
 

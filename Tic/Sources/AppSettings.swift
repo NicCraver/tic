@@ -69,6 +69,7 @@ enum AppSettings {
     static let menuBarEnabledBlocksKey = "menuBarEnabledBlocks"
     static let showAnnotationDotsKey = "showAnnotationDots"
     static let showSolarTermsKey = "showSolarTerms"
+    static let autoUpdateHolidaysKey = "autoUpdateHolidays"
     static let legacyDateFormatStyleKey = "dateFormatStyle"
 
     static func migrateLegacyFormatIfNeeded() {
@@ -121,5 +122,16 @@ enum AppSettings {
     static func resetMenuBarLayout() {
         saveBlockOrder(MenuBarBlock.defaultOrder)
         saveEnabledBlocks(MenuBarBlock.defaultEnabled)
+    }
+
+    /// 读取布尔设置；键不存在时返回 `defaultValue`（对齐 `@AppStorage` 的默认值语义）。
+    static func bool(forKey key: String, default defaultValue: Bool) -> Bool {
+        UserDefaults.standard.object(forKey: key) == nil
+            ? defaultValue
+            : UserDefaults.standard.bool(forKey: key)
+    }
+
+    static func setBool(_ value: Bool, forKey key: String) {
+        UserDefaults.standard.set(value, forKey: key)
     }
 }

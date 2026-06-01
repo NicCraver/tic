@@ -1,31 +1,27 @@
 import AppKit
-import SwiftUI
 
 /// 配置设置窗口为系统设置式全高侧栏（交通灯叠在侧栏材质上）。
+/// 全高布局由 `SettingsSplitViewController` 的 sidebar item `allowsFullHeightLayout`
+/// 配合此处的透明标题栏 + `sidebarTrackingSeparator` toolbar 共同实现。
 @MainActor
 enum SettingsWindowChrome {
-    static func apply<Content: View>(to window: NSWindow, hosting: NSHostingController<Content>) {
+    static func apply(to window: NSWindow) {
         window.styleMask.insert(.fullSizeContentView)
-        disableAuxiliaryWindowButtons(in: window)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.titlebarSeparatorStyle = .none
         window.isMovableByWindowBackground = true
         window.toolbarStyle = .unified
 
-        hosting.safeAreaRegions = []
-
         lockWindowSize(window)
-
         installTrackingSeparatorToolbar(on: window)
-        configureFullHeightSplitItems(in: window)
+        disableAuxiliaryWindowButtons(in: window)
 
         DispatchQueue.main.async {
             disableAuxiliaryWindowButtons(in: window)
         }
     }
 
-    /// 固定设置窗口尺寸，禁止用户拖拽改变宽高。
     /// 固定尺寸窗口：最小化 / 最大化按钮保留交通灯占位，但禁用交互（与系统设置一致）。
     static func disableAuxiliaryWindowButtons(in window: NSWindow) {
         window.standardWindowButton(.miniaturizeButton)?.isEnabled = false
@@ -39,13 +35,6 @@ enum SettingsWindowChrome {
         window.setContentSize(size)
     }
 
-    static func configureFullHeightSplitItems(in window: NSWindow) {
-        guard let splitViewController = findSplitViewController(in: window.contentView) else { return }
-        for item in splitViewController.splitViewItems {
-            item.allowsFullHeightLayout = true
-        }
-    }
-
     private static func installTrackingSeparatorToolbar(on window: NSWindow) {
         let identifier = NSToolbar.Identifier("TicSettingsToolbar")
         if window.toolbar?.identifier == identifier { return }
@@ -56,22 +45,6 @@ enum SettingsWindowChrome {
         toolbar.allowsUserCustomization = false
         toolbar.delegate = SettingsToolbarDelegate.shared
         window.toolbar = toolbar
-    }
-
-    private static func findSplitViewController(in view: NSView?) -> NSSplitViewController? {
-        guard let view else { return nil }
-        if let controller = view.nextResponder as? NSSplitViewController {
-            return controller
-        }
-        if let controller = view.window?.contentViewController as? NSSplitViewController {
-            return controller
-        }
-        for subview in view.subviews {
-            if let found = findSplitViewController(in: subview) {
-                return found
-            }
-        }
-        return nil
     }
 }
 

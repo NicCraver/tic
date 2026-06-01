@@ -144,6 +144,10 @@ struct CalendarPopoverView: View {
         .onChange(of: showSolarTerms) {
             refreshCalendarData(displayedMonth: displayedMonth, selectedDate: selectedDate)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .holidayDataDidUpdate)) { _ in
+            dataCache = CalendarPopoverDataCache()
+            refreshCalendarData(displayedMonth: displayedMonth, selectedDate: selectedDate)
+        }
         .background { monthKeyboardShortcuts }
     }
 

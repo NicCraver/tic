@@ -47,8 +47,9 @@ open Tic.xcodeproj
 
 ## 技术栈
 
-- Swift 6 + SwiftUI
+- Swift 6 + SwiftUI（菜单栏 / 弹层）+ AppKit（设置窗口）
 - MenuBarExtra（`.window` 弹出样式）
+- [LunarSwift](https://github.com/6tail/lunar-swift)（二十四节气）
 - XcodeGen
 
 ## 反馈

@@ -34,91 +34,14 @@ enum ChineseCalendarSupport {
     ]
     private static let digitNames = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 
-    // 国务院公布的调休安排（覆盖弹窗常见浏览区间）
-    private static let annotations: [String: DayAnnotation] = [
-        // 2025
-        "2025-01-01": .init(subtitle: "元旦", badge: .rest),
-        "2025-01-26": .init(badge: .work),
-        "2025-01-28": .init(subtitle: "除夕", badge: .rest),
-        "2025-01-29": .init(subtitle: "春节", badge: .rest),
-        "2025-01-30": .init(subtitle: "春节", badge: .rest),
-        "2025-01-31": .init(subtitle: "春节", badge: .rest),
-        "2025-02-01": .init(subtitle: "春节", badge: .rest),
-        "2025-02-02": .init(subtitle: "春节", badge: .rest),
-        "2025-02-03": .init(subtitle: "春节", badge: .rest),
-        "2025-02-04": .init(subtitle: "春节", badge: .rest),
-        "2025-02-08": .init(badge: .work),
-        "2025-04-04": .init(subtitle: "清明", badge: .rest),
-        "2025-04-05": .init(subtitle: "清明", badge: .rest),
-        "2025-04-06": .init(subtitle: "清明", badge: .rest),
-        "2025-04-27": .init(badge: .work),
-        "2025-05-01": .init(subtitle: "劳动节", badge: .rest),
-        "2025-05-02": .init(subtitle: "劳动节", badge: .rest),
-        "2025-05-03": .init(subtitle: "劳动节", badge: .rest),
-        "2025-05-04": .init(subtitle: "劳动节", badge: .rest),
-        "2025-05-05": .init(subtitle: "劳动节", badge: .rest),
-        "2025-05-31": .init(subtitle: "端午", badge: .rest),
-        "2025-06-01": .init(subtitle: "端午", badge: .rest),
-        "2025-06-02": .init(subtitle: "端午", badge: .rest),
-        "2025-09-28": .init(badge: .work),
-        "2025-10-01": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-02": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-03": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-04": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-05": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-06": .init(subtitle: "中秋", badge: .rest),
-        "2025-10-07": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-08": .init(subtitle: "国庆", badge: .rest),
-        "2025-10-11": .init(badge: .work),
-        // 2026
-        "2026-01-01": .init(subtitle: "元旦", badge: .rest),
-        "2026-01-02": .init(subtitle: "元旦", badge: .rest),
-        "2026-01-03": .init(subtitle: "元旦", badge: .rest),
-        "2026-02-14": .init(badge: .work),
-        "2026-02-15": .init(subtitle: "春节", badge: .rest),
-        "2026-02-16": .init(subtitle: "除夕", badge: .rest),
-        "2026-02-17": .init(subtitle: "春节", badge: .rest),
-        "2026-02-18": .init(subtitle: "春节", badge: .rest),
-        "2026-02-19": .init(subtitle: "春节", badge: .rest),
-        "2026-02-20": .init(subtitle: "春节", badge: .rest),
-        "2026-02-21": .init(subtitle: "春节", badge: .rest),
-        "2026-02-22": .init(subtitle: "春节", badge: .rest),
-        "2026-02-23": .init(subtitle: "春节", badge: .rest),
-        "2026-02-28": .init(badge: .work),
-        "2026-04-04": .init(subtitle: "清明", badge: .rest),
-        "2026-04-05": .init(subtitle: "清明", badge: .rest),
-        "2026-04-06": .init(subtitle: "清明", badge: .rest),
-        "2026-05-01": .init(subtitle: "劳动节", badge: .rest),
-        "2026-05-02": .init(subtitle: "劳动节", badge: .rest),
-        "2026-05-03": .init(subtitle: "劳动节", badge: .rest),
-        "2026-05-04": .init(subtitle: "劳动节", badge: .rest),
-        "2026-05-05": .init(subtitle: "劳动节", badge: .rest),
-        "2026-05-09": .init(badge: .work),
-        "2026-06-19": .init(subtitle: "端午", badge: .rest),
-        "2026-06-20": .init(subtitle: "端午", badge: .rest),
-        "2026-06-21": .init(subtitle: "端午", badge: .rest),
-        "2026-09-20": .init(badge: .work),
-        "2026-09-25": .init(subtitle: "中秋", badge: .rest),
-        "2026-09-26": .init(subtitle: "中秋", badge: .rest),
-        "2026-09-27": .init(subtitle: "中秋", badge: .rest),
-        "2026-10-01": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-02": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-03": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-04": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-05": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-06": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-07": .init(subtitle: "国庆", badge: .rest),
-        "2026-10-10": .init(badge: .work),
-        // 2027
-        "2027-01-01": .init(subtitle: "元旦", badge: .rest),
-        "2027-01-02": .init(subtitle: "元旦", badge: .rest),
-        "2027-01-03": .init(subtitle: "元旦", badge: .rest),
-    ]
+    // 法定节假日 / 调休（休/班）来自 `HolidayStore`（打包 JSON + 联网刷新），不再内置硬编码表。
+
 
     private static let solarFestivalTemplates: [(month: Int, day: Int, cellTitle: String, eventTitle: String)] = [
         (1, 1, "元旦", "元旦"),
         (2, 14, "情人节", "情人节"),
         (3, 8, "妇女节", "妇女节"),
+        (5, 1, "劳动节", "劳动节"),
         (5, 4, "青年节", "青年节"),
         (5, 8, "微笑日", "世界微笑日"),
         (5, 12, "护士节", "护士节"),
@@ -128,6 +51,7 @@ enum ChineseCalendarSupport {
         (6, 5, "环境日", "世界环境日"),
         (8, 1, "建军节", "建军节"),
         (9, 10, "教师节", "教师节"),
+        (10, 1, "国庆节", "国庆节"),
         (12, 24, "平安夜", "平安夜"),
         (12, 25, "圣诞节", "圣诞节"),
     ]
@@ -141,34 +65,28 @@ enum ChineseCalendarSupport {
         })
     }()
 
-    private static let publicHolidayEvents: [CalendarEventCandidate] = {
-        annotations.compactMap { key, ann -> CalendarEventCandidate? in
-            guard ann.badge == .rest,
-                  let subtitle = ann.subtitle,
-                  let date = date(fromKey: key),
-                  isFirstAnnotatedHoliday(date, subtitle: subtitle)
-            else { return nil }
-
-            return CalendarEventCandidate(
-                date: date,
-                title: festivalDisplayName(subtitle),
-                dateLabel: gregorianDateLabel(for: date),
-                priority: 0
-            )
-        }
-        .sorted { lhs, rhs in
-            if !gregorian.isDate(lhs.date, inSameDayAs: rhs.date) {
-                return lhs.date < rhs.date
-            }
-            return lhs.priority < rhs.priority
-        }
-    }()
+    /// 农历传统节日（农历月, 农历日, 月历格短名, 事件名）；除夕单独按「次日为正月初一」判定。
+    private static let lunarFestivalTemplates: [(month: Int, day: Int, cellTitle: String, eventTitle: String)] = [
+        (1, 1, "春节", "春节"),
+        (1, 15, "元宵", "元宵节"),
+        (2, 2, "龙抬头", "龙抬头"),
+        (5, 5, "端午", "端午节"),
+        (7, 7, "七夕", "七夕"),
+        (7, 15, "中元", "中元节"),
+        (8, 15, "中秋", "中秋节"),
+        (9, 9, "重阳", "重阳节"),
+        (12, 8, "腊八", "腊八节"),
+        (12, 23, "小年", "小年"),
+    ]
 
     static func annotation(for date: Date) -> DayAnnotation {
         if let stored = storedAnnotation(for: date) {
             return stored
         }
         if let festival = solarFestival(for: date)?.cellTitle {
+            return DayAnnotation(subtitle: festival, badge: nil)
+        }
+        if let festival = lunarFestival(for: date)?.cellTitle {
             return DayAnnotation(subtitle: festival, badge: nil)
         }
         return DayAnnotation(subtitle: lunarDayLabel(for: date), badge: nil)
@@ -190,12 +108,16 @@ enum ChineseCalendarSupport {
         let ann = storedAnnotation(for: date)
         let solarTerm = showSolarTerms ? SolarTermSupport.name(for: date) : nil
         let festival = solarFestival(for: date)
+        let lunarFest = lunarFestival(for: date)
 
         if let term = solarTerm {
             subtitles.append(term)
         }
         if let festival = festival?.cellTitle {
             subtitles.append(festival)
+        }
+        if let lunarFest = lunarFest?.cellTitle {
+            subtitles.append(lunarFest)
         }
         if let subtitle = ann?.subtitle,
            ann?.badge != .rest || isFirstAnnotatedHoliday(date, subtitle: subtitle) {
@@ -211,6 +133,7 @@ enum ChineseCalendarSupport {
             || ann?.subtitle.map(isSolarHoliday) == true
             || solarTerm != nil
             || festival != nil
+            || lunarFest != nil
 
         return (
             subtitles: unique.isEmpty ? [lunarDayLabel(for: date)] : unique,
@@ -229,6 +152,7 @@ enum ChineseCalendarSupport {
         if let subtitle = ann.subtitle, isSolarHoliday(subtitle) { return true }
         if SolarTermSupport.hasTerm(on: date) { return true }
         if solarFestival(for: date) != nil { return true }
+        if lunarFestival(for: date) != nil { return true }
         return false
     }
 
@@ -302,8 +226,8 @@ enum ChineseCalendarSupport {
         var candidates: [CalendarEventCandidate] = []
         candidates.reserveCapacity(includeSolarTerms ? 96 : 48)
 
-        appendPublicHolidayEvents(from: start, through: end, into: &candidates)
         appendSolarFestivalEvents(from: start, through: end, into: &candidates)
+        appendLunarFestivalEvents(from: start, through: end, into: &candidates)
         if includeSolarTerms {
             appendSolarTermEvents(from: start, through: end, into: &candidates)
         }
@@ -495,13 +419,23 @@ enum ChineseCalendarSupport {
         SolarTermSupport.date(of: term, in: year)
     }
 
-    private static func appendPublicHolidayEvents(
+    private static func appendLunarFestivalEvents(
         from start: Date,
         through end: Date,
         into candidates: inout [CalendarEventCandidate]
     ) {
-        for event in publicHolidayEvents where event.date >= start && event.date <= end {
-            candidates.append(event)
+        var date = start
+        while date <= end {
+            if let festival = lunarFestival(for: date) {
+                candidates.append(CalendarEventCandidate(
+                    date: date,
+                    title: festival.eventTitle,
+                    dateLabel: lunarDateLabel(for: date),
+                    priority: 1
+                ))
+            }
+            guard let next = gregorian.date(byAdding: .day, value: 1, to: date) else { break }
+            date = next
         }
     }
 
@@ -598,11 +532,33 @@ enum ChineseCalendarSupport {
         return gregorian.date(byAdding: .day, value: offset, to: firstOfMonth)
     }
 
+    private static func lunarFestival(for date: Date) -> (cellTitle: String, eventTitle: String)? {
+        if isLunarNewYearEve(date) {
+            return ("除夕", "除夕")
+        }
+        let components = chinese.dateComponents([.month, .day], from: date)
+        guard components.isLeapMonth != true,
+              let month = components.month,
+              let day = components.day,
+              let template = lunarFestivalTemplates.first(where: { $0.month == month && $0.day == day })
+        else {
+            return nil
+        }
+        return (template.cellTitle, template.eventTitle)
+    }
+
+    /// 除夕 = 次日为正月初一（腊月最后一日，廿九或三十均可）。
+    private static func isLunarNewYearEve(_ date: Date) -> Bool {
+        guard let next = gregorian.date(byAdding: .day, value: 1, to: date) else { return false }
+        let components = chinese.dateComponents([.month, .day], from: next)
+        return components.isLeapMonth != true && components.month == 1 && components.day == 1
+    }
+
     private static func isFirstAnnotatedHoliday(_ date: Date, subtitle: String) -> Bool {
         guard let previousDate = gregorian.date(byAdding: .day, value: -1, to: date) else {
             return true
         }
-        let previous = annotations[dateKey(previousDate)]
+        let previous = HolidayStore.shared.annotation(forKey: dateKey(previousDate))
         return previous?.badge != .rest || previous?.subtitle != subtitle
     }
 
@@ -620,32 +576,8 @@ enum ChineseCalendarSupport {
         return labels[safe: index] ?? ""
     }
 
-    private static func festivalDisplayName(_ subtitle: String) -> String {
-        switch subtitle {
-        case "国庆": return "国庆节"
-        case "端午": return "端午节"
-        case "中秋": return "中秋节"
-        case "清明": return "清明节"
-        case "劳动": return "劳动节"
-        default:
-            return subtitle.hasSuffix("节") ? subtitle : subtitle + "节"
-        }
-    }
-
     private static func storedAnnotation(for date: Date) -> DayAnnotation? {
-        annotations[dateKey(date)]
-    }
-
-    private static func date(fromKey key: String) -> Date? {
-        let parts = key.split(separator: "-")
-        guard parts.count == 3,
-              let year = Int(parts[0]),
-              let month = Int(parts[1]),
-              let day = Int(parts[2])
-        else {
-            return nil
-        }
-        return gregorian.date(from: DateComponents(year: year, month: month, day: day))
+        HolidayStore.shared.annotation(forKey: dateKey(date))
     }
 
     private static func dateKey(_ date: Date) -> String {
