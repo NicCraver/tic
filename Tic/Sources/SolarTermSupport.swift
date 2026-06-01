@@ -4,7 +4,13 @@ import LunarSwift
 /// 二十四节气：由 LunarSwift 按天文算法计算，任意年份有效（替代旧的硬编码查表）。
 /// 对外 API 与旧实现保持一致，`ChineseCalendarSupport` 无需改动。
 enum SolarTermSupport {
-    private static let gregorian = Calendar(identifier: .gregorian)
+    private static let beijingTimeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+
+    private static let gregorian: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = beijingTimeZone
+        return calendar
+    }()
 
     private static let standardNames: Set<String> = [
         "小寒", "大寒", "立春", "雨水", "惊蛰", "春分", "清明", "谷雨",
@@ -26,7 +32,29 @@ enum SolarTermSupport {
     }
 
     /// 按公历年缓存计算结果（节气计算较重，避免月历每格重复计算）。
-    private nonisolated(unsafe) static var cache: [Int: YearTerms] = [:]
+    private final class YearTermCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var storage: [Int: YearTerms] = [:]
+
+        func terms(forYear year: Int, compute: () -> YearTerms) -> YearTerms {
+            lock.lock()
+            if let cached = storage[year] {
+                lock.unlock()
+                return cached
+            }
+            lock.unlock()
+
+            let computed = compute()
+
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached = storage[year] { return cached }
+            storage[year] = computed
+            return computed
+        }
+    }
+
+    private static let yearTermCache = YearTermCache()
 
     static func name(for date: Date) -> String? {
         terms(forYear: gregorian.component(.year, from: date))
@@ -46,10 +74,7 @@ enum SolarTermSupport {
     }
 
     private static func terms(forYear year: Int) -> YearTerms {
-        if let cached = cache[year] { return cached }
-        let computed = compute(year: year)
-        cache[year] = computed
-        return computed
+        yearTermCache.terms(forYear: year) { compute(year: year) }
     }
 
     private static func compute(year: Int) -> YearTerms {

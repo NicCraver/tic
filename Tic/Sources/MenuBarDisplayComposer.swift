@@ -118,7 +118,7 @@ enum MenuBarDisplayComposer {
         case .weekNumber:
             return "(53)"
         case .lunar:
-            return "十一月三十"
+            return "闰十一月三十"
         case .time:
             let pattern: String
             if use24Hour {

@@ -17,6 +17,20 @@ macOS 菜单栏日历工具：状态栏显示日期时间，点击弹出日历�
 - 登录时自动启动
 - 无 Dock 图标（纯菜单栏应用）
 
+## 已完成（TODO）
+
+实现与数据层改造见 [`docs/date-holiday-logic.html`](docs/date-holiday-logic.html)。
+
+- [x] **法定调休联网**：`HolidayStore` 打包 JSON + holiday-cn 刷新，去除硬编码年份上限
+- [x] **农历节日本地推算**：春节/元宵/端午/中秋等 + 除夕，任意年份有效
+- [x] **二十四节气算法化**：LunarSwift 天文计算，修复漏「冬至」，按年缓存且线程安全
+- [x] **日柱改库计算**：干支日由 LunarSwift `dayInGanZhi` 输出，去除魔法锚点
+- [x] **时区统一**：农历 / 节气 / 调休均以 `Asia/Shanghai` 为日界
+- [x] **月历与周数一致**：周一首列网格、`firstWeekday = 2`，删除 `monthGrid` 死代码
+- [x] **菜单栏定宽**：闰月占位「闰十一月三十」，避免极端裁切
+- [x] **连休节日名去重**：连休仅首日显示法定节日名，向前查找抗数据缺口
+- [x] **单元测试**：节气、农历节日、休/班、日柱、闰月、远年、网格周首等（13 项）
+
 ## 要求
 
 - macOS 14+
@@ -49,7 +63,7 @@ open Tic.xcodeproj
 
 - Swift 6 + SwiftUI（菜单栏 / 弹层）+ AppKit（设置窗口）
 - MenuBarExtra（`.window` 弹出样式）
-- [LunarSwift](https://github.com/6tail/lunar-swift)（二十四节气）
+- [LunarSwift](https://github.com/6tail/lunar-swift)（二十四节气、日干支）
 - XcodeGen
 
 ## 反馈

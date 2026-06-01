@@ -8,9 +8,13 @@ final class TicTests: XCTestCase {
     }
 
     func testSolarTermOnLixia2026() {
-        let components = DateComponents(year: 2026, month: 5, day: 5)
-        let date = Calendar(identifier: .gregorian).date(from: components)!
-        XCTAssertEqual(SolarTermSupport.name(for: date), "立夏")
+        XCTAssertEqual(SolarTermSupport.name(for: gregorianDate(2026, 5, 5)), "立夏")
+    }
+
+    func testSexagenaryDayFromLunarSwift() {
+        // 日柱改由 LunarSwift 计算（原锚点 2026-05-29 = 癸卯）
+        let meta = ChineseCalendarSupport.lunarDetailMeta(for: gregorianDate(2026, 5, 29))
+        XCTAssertTrue(meta.contains("癸卯日"), "日柱应为癸卯，实际：\(meta)")
     }
 
     func testSolarTermsCanBeReadByYear() {
@@ -23,15 +27,15 @@ final class TicTests: XCTestCase {
     }
 
     func testWeekOfYearUsesChineseLocale() {
-        let components = DateComponents(year: 2026, month: 5, day: 27)
-        let date = Calendar(identifier: .gregorian).date(from: components)!
-        XCTAssertEqual(ChineseCalendarSupport.weekOfYear(for: date), 21)
+        XCTAssertEqual(ChineseCalendarSupport.weekOfYear(for: gregorianDate(2026, 5, 27)), 21)
     }
 
     // MARK: - 农历节日（本地推算）
 
     private func gregorianDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
-        Calendar(identifier: .gregorian).date(from: DateComponents(year: year, month: month, day: day))!
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+        return calendar.date(from: DateComponents(year: year, month: month, day: day))!
     }
 
     func testLunarFestivalLanternFestival2026() {
@@ -52,5 +56,32 @@ final class TicTests: XCTestCase {
 
     func testBundledHolidayWorkDay() {
         XCTAssertEqual(ChineseCalendarSupport.badge(for: gregorianDate(2026, 2, 28)), .work)
+    }
+
+    // MARK: - 边界与一致性
+
+    func testLeapMonthPrefixInLunarLabel() {
+        // 2023 闰二月初一 ≈ 公历 2023-03-22
+        XCTAssertTrue(
+            ChineseCalendarSupport.lunarMonthDayLabel(for: gregorianDate(2023, 3, 22)).hasPrefix("闰")
+        )
+    }
+
+    func testSolarTermsInDistantYear() {
+        XCTAssertEqual(SolarTermSupport.terms(in: 2030).count, 24)
+    }
+
+    func testMonthSlotsUseMondayAsFirstColumn() {
+        // 2026-01-01 周四 → 周一首列前应空 3 格
+        let slots = ChineseCalendarSupport.monthSlots(for: gregorianDate(2026, 1, 1))
+        let firstDayIndex = slots.firstIndex { $0.dayNumber == 1 }
+        XCTAssertEqual(firstDayIndex, 3)
+    }
+
+    func testNationalDaySubtitleOnlyOnFirstRestDay() {
+        let oct1 = ChineseCalendarSupport.cellSubtitles(for: gregorianDate(2026, 10, 1))
+        let oct2 = ChineseCalendarSupport.cellSubtitles(for: gregorianDate(2026, 10, 2))
+        XCTAssertTrue(oct1.contains("国庆节"))
+        XCTAssertFalse(oct2.contains("国庆节"))
     }
 }

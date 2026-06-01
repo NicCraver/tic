@@ -1,4 +1,5 @@
 import Foundation
+import LunarSwift
 
 enum DayBadge: String {
     case rest = "休"
@@ -18,12 +19,22 @@ enum ChineseCalendarSupport {
         let priority: Int
     }
 
+    /// 农历、节气、调休均以北京时间（东八区）为「当天」边界，与 LunarSwift / holiday-cn 一致。
+    private static let beijingTimeZone = TimeZone(identifier: "Asia/Shanghai") ?? .current
+
     private static let gregorian: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "zh_CN")
+        calendar.timeZone = beijingTimeZone
+        // 与月历网格一致：周一为每周第一天（zh_CN 默认周日为首，此处显式对齐）。
+        calendar.firstWeekday = 2
         return calendar
     }()
-    private static let chinese = Calendar(identifier: .chinese)
+    private static let chinese: Calendar = {
+        var calendar = Calendar(identifier: .chinese)
+        calendar.timeZone = beijingTimeZone
+        return calendar
+    }()
 
     private static let heavenlyStems = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"]
     private static let earthlyBranches = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
@@ -269,7 +280,9 @@ enum ChineseCalendarSupport {
     static func monthSlots(for month: Date, showSolarTerms: Bool) -> [CalendarMonthSlot] {
         let firstOfMonth = gregorian.date(from: gregorian.dateComponents([.year, .month], from: month))!
         let daysInMonth = gregorian.range(of: .day, in: .month, for: firstOfMonth)!.count
-        let leading = positiveModulo(gregorian.component(.weekday, from: firstOfMonth) + 5, 7)
+        let leading = mondayBasedLeadingBlankCount(
+            weekdayOfFirst: gregorian.component(.weekday, from: firstOfMonth)
+        )
         let monthKey = dateKey(firstOfMonth)
         let monthNumber = gregorian.component(.month, from: firstOfMonth)
 
@@ -299,39 +312,6 @@ enum ChineseCalendarSupport {
         }
 
         return slots
-    }
-
-    static func monthGrid(for month: Date) -> [CalendarGridDay] {
-        let firstOfMonth = gregorian.date(from: gregorian.dateComponents([.year, .month], from: month))!
-        let daysInMonth = gregorian.range(of: .day, in: .month, for: firstOfMonth)!.count
-        let leading = gregorian.component(.weekday, from: firstOfMonth) - 1
-
-        var days: [CalendarGridDay] = []
-
-        if leading > 0 {
-            let prevMonth = gregorian.date(byAdding: .month, value: -1, to: firstOfMonth)!
-            let prevDays = gregorian.range(of: .day, in: .month, for: prevMonth)!.count
-            for offset in (prevDays - leading + 1)...prevDays {
-                let date = gregorian.date(byAdding: .day, value: offset - 1, to: prevMonth)!
-                days.append(CalendarGridDay(date: date, isInDisplayedMonth: false))
-            }
-        }
-
-        for day in 1...daysInMonth {
-            let date = gregorian.date(byAdding: .day, value: day - 1, to: firstOfMonth)!
-            days.append(CalendarGridDay(date: date, isInDisplayedMonth: true))
-        }
-
-        let trailing = (7 - (days.count % 7)) % 7
-        if trailing > 0 {
-            let nextMonth = gregorian.date(byAdding: .month, value: 1, to: firstOfMonth)!
-            for day in 0..<trailing {
-                let date = gregorian.date(byAdding: .day, value: day, to: nextMonth)!
-                days.append(CalendarGridDay(date: date, isInDisplayedMonth: false))
-            }
-        }
-
-        return days
     }
 
     private static func lunarDayLabel(for date: Date) -> String {
@@ -371,14 +351,11 @@ enum ChineseCalendarSupport {
     }
 
     private static func sexagenaryDayLabel(for date: Date) -> String {
-        let anchor = gregorian.date(from: DateComponents(year: 2026, month: 5, day: 29))!
-        let days = gregorian.dateComponents(
-            [.day],
-            from: gregorian.startOfDay(for: anchor),
-            to: gregorian.startOfDay(for: date)
-        ).day ?? 0
-        let index = positiveModulo(39 + days, 60)
-        return heavenlyStems[index % 10] + earthlyBranches[index % 12]
+        let day = gregorian.startOfDay(for: date)
+        let year = gregorian.component(.year, from: day)
+        let month = gregorian.component(.month, from: day)
+        let dayOfMonth = gregorian.component(.day, from: day)
+        return Solar.fromYmdHms(year: year, month: month, day: dayOfMonth).lunar.dayInGanZhi
     }
 
     private static func solarMonthBranchIndex(for date: Date, in year: Int) -> Int {
@@ -554,12 +531,23 @@ enum ChineseCalendarSupport {
         return components.isLeapMonth != true && components.month == 1 && components.day == 1
     }
 
+    /// 法定连休仅首日显示节日名；向前最多 14 天跳过数据缺口，避免缺前一天条目时重复显示。
     private static func isFirstAnnotatedHoliday(_ date: Date, subtitle: String) -> Bool {
-        guard let previousDate = gregorian.date(byAdding: .day, value: -1, to: date) else {
+        var cursor = date
+        for _ in 0..<14 {
+            guard let previousDate = gregorian.date(byAdding: .day, value: -1, to: cursor) else {
+                return true
+            }
+            cursor = previousDate
+            guard let previous = HolidayStore.shared.annotation(forKey: dateKey(previousDate)) else {
+                continue
+            }
+            if previous.badge == .rest && previous.subtitle == subtitle {
+                return false
+            }
             return true
         }
-        let previous = HolidayStore.shared.annotation(forKey: dateKey(previousDate))
-        return previous?.badge != .rest || previous?.subtitle != subtitle
+        return true
     }
 
     private static func gregorianDateLabel(for date: Date) -> String {
@@ -596,17 +584,15 @@ enum ChineseCalendarSupport {
         value < 10 ? "0\(value)" : "\(value)"
     }
 
+    /// 月历网格周一为首列：`weekday` 为 `Calendar` 标准（1=周日 … 7=周六）。
+    private static func mondayBasedLeadingBlankCount(weekdayOfFirst: Int) -> Int {
+        positiveModulo(weekdayOfFirst + 5, 7)
+    }
+
     private static func positiveModulo(_ value: Int, _ divisor: Int) -> Int {
         let remainder = value % divisor
         return remainder >= 0 ? remainder : remainder + divisor
     }
-}
-
-struct CalendarGridDay: Identifiable {
-    let date: Date
-    let isInDisplayedMonth: Bool
-
-    var id: Date { date }
 }
 
 private extension Array {

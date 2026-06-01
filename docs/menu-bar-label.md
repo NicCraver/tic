@@ -35,7 +35,7 @@ flowchart LR
 
 ### 定宽规则
 
-1. **占位串**：`widestCompose` 得到各模块最宽组合，再 `wideningDigits` 把数字换成 `8`（等宽数字下最宽字形）。
+1. **占位串**：`widestCompose` 得到各模块最宽组合（农历含「闰十一月三十」），再 `wideningDigits` 把数字换成 `8`（等宽数字下最宽字形）。
 2. **量宽**：`reservedTextWidth(for:)` 对占位串取 `labelFont` / `labelDigitFont` 测量的较大值。
 3. **总宽**：`textSlotWidth` +（可选图标 16 + 间距 4）+ `labelHorizontalInset * 2`（当前为 0）。
 4. **渲染**：`MenuBarRenderedLabel` 在 `labelWidth` 画布内将**实时** `displayText` 居中；画布宽度不变，故菜单栏项不抖。
