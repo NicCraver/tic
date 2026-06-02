@@ -227,6 +227,28 @@ enum ChineseCalendarSupport {
             .map { ($0.title, $0.daysUntil) }
     }
 
+    /// 距下一法定休首日（HolidayStore 中 badge 为「休」的首日）的天数；今天已是休假日则跳过当前连休。
+    static func nextRestDayCountdown(from date: Date) -> (name: String, days: Int)? {
+        let start = gregorian.startOfDay(for: date)
+        for offset in 0..<370 {
+            guard let candidate = gregorian.date(byAdding: .day, value: offset, to: start),
+                  let stored = storedAnnotation(for: candidate),
+                  stored.badge == .rest,
+                  let name = stored.subtitle,
+                  isFirstAnnotatedHoliday(candidate, subtitle: name)
+            else { continue }
+            if offset > 0 {
+                return (name, offset)
+            }
+        }
+        return nil
+    }
+
+    static func nextRestDayCountdownLabel(from date: Date) -> String? {
+        guard let next = nextRestDayCountdown(from: date) else { return nil }
+        return "\(next.name) \(festivalCountdownLabel(days: next.days))"
+    }
+
     static func upcomingEvents(
         from date: Date,
         limit: Int = 3,

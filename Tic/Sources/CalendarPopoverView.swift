@@ -65,6 +65,11 @@ struct CalendarPopoverView: View {
         return label == "今天" ? nil : label
     }
 
+    private var nextRestDayCountdownLabel: String? {
+        guard relativeOffsetLabel == nil else { return nil }
+        return ChineseCalendarSupport.nextRestDayCountdownLabel(from: selectedDate)
+    }
+
     private var themeToggleTitle: String {
         resolvedColorScheme == .dark ? "浅色" : "深色"
     }
@@ -79,10 +84,14 @@ struct CalendarPopoverView: View {
                 monthNumber: displayedMonthNumber,
                 year: displayedYear,
                 relativeOffsetLabel: relativeOffsetLabel,
+                nextRestDayCountdownLabel: nextRestDayCountdownLabel,
                 themeToggleTitle: themeToggleTitle,
                 themeToggleSystemImage: themeToggleSystemImage,
                 palette: palette,
                 onShowMonthPicker: showMonthPicker,
+                onPreviousMonth: { shiftMonth(by: -1) },
+                onGoToToday: goToToday,
+                onNextMonth: { shiftMonth(by: 1) },
                 onToggleTheme: toggleTheme,
                 onShowSettings: showSettings
             )

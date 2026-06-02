@@ -4,15 +4,19 @@ struct CalendarPopoverHeader: View {
     let monthNumber: Int
     let year: Int
     let relativeOffsetLabel: String?
+    let nextRestDayCountdownLabel: String?
     let themeToggleTitle: String
     let themeToggleSystemImage: String
     let palette: CalendarPalette
     let onShowMonthPicker: () -> Void
+    let onPreviousMonth: () -> Void
+    let onGoToToday: () -> Void
+    let onNextMonth: () -> Void
     let onToggleTheme: () -> Void
     let onShowSettings: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             HStack(alignment: .lastTextBaseline, spacing: 8) {
                 Button(action: onShowMonthPicker) {
                     Text("\(monthNumber)月")
@@ -44,25 +48,98 @@ struct CalendarPopoverHeader: View {
                             Capsule().strokeBorder(palette.accent.opacity(0.18))
                         }
                         .accessibilityLabel("相对今天\(relativeOffsetLabel)")
+                } else if let nextRestDayCountdownLabel {
+                    Text(nextRestDayCountdownLabel)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(palette.accent)
+                        .padding(.horizontal, 7)
+                        .frame(height: 16)
+                        .background(palette.accent.opacity(0.10), in: Capsule())
+                        .overlay {
+                            Capsule().strokeBorder(palette.accent.opacity(0.18))
+                        }
+                        .accessibilityLabel("距离\(nextRestDayCountdownLabel)")
                 }
             }
 
             Spacer(minLength: 0)
 
-            HStack(spacing: 8) {
-                headerIconButton(
-                    systemName: themeToggleSystemImage,
-                    accessibilityLabel: "切换为\(themeToggleTitle)外观",
-                    action: onToggleTheme
-                )
+            HStack(spacing: 10) {
+                monthNavigationControl
 
-                headerIconButton(
-                    systemName: "gearshape.fill",
-                    accessibilityLabel: "打开设置",
-                    action: onShowSettings
-                )
+                HStack(spacing: 8) {
+                    headerIconButton(
+                        systemName: themeToggleSystemImage,
+                        accessibilityLabel: "切换为\(themeToggleTitle)外观",
+                        action: onToggleTheme
+                    )
+
+                    headerIconButton(
+                        systemName: "gearshape.fill",
+                        accessibilityLabel: "打开设置",
+                        action: onShowSettings
+                    )
+                }
             }
         }
+    }
+
+    private var monthNavigationControl: some View {
+        HStack(spacing: 0) {
+            monthNavigationButton(
+                systemName: "chevron.left",
+                accessibilityLabel: "上个月",
+                action: onPreviousMonth
+            )
+
+            divider
+
+            Button(action: onGoToToday) {
+                Text("今")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 30, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("回到今天")
+            .help("回到今天")
+
+            divider
+
+            monthNavigationButton(
+                systemName: "chevron.right",
+                accessibilityLabel: "下个月",
+                action: onNextMonth
+            )
+        }
+        .foregroundStyle(palette.primaryText)
+        .background(palette.controlBackground, in: Capsule())
+        .overlay {
+            Capsule().strokeBorder(palette.controlBorder)
+        }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(palette.controlBorder)
+            .frame(width: 1, height: 14)
+            .accessibilityHidden(true)
+    }
+
+    private func monthNavigationButton(
+        systemName: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 10, weight: .bold))
+                .frame(width: 27, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .help(accessibilityLabel)
     }
 
     private func headerIconButton(

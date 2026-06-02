@@ -58,6 +58,24 @@ final class TicTests: XCTestCase {
         XCTAssertEqual(ChineseCalendarSupport.badge(for: gregorianDate(2026, 2, 28)), .work)
     }
 
+    func testNextRestDayCountdownFromWorkDay() {
+        let result = ChineseCalendarSupport.nextRestDayCountdown(from: gregorianDate(2026, 6, 2))
+        XCTAssertEqual(result?.name, "端午节")
+        XCTAssertEqual(result?.days, 17)
+        XCTAssertEqual(
+            ChineseCalendarSupport.nextRestDayCountdownLabel(from: gregorianDate(2026, 6, 2)),
+            "端午节 17天后"
+        )
+    }
+
+    func testNextRestDayCountdownEve() {
+        XCTAssertEqual(ChineseCalendarSupport.nextRestDayCountdown(from: gregorianDate(2026, 6, 18))?.days, 1)
+    }
+
+    func testNextRestDayCountdownSkipsCurrentRestPeriod() {
+        XCTAssertNil(ChineseCalendarSupport.nextRestDayCountdown(from: gregorianDate(2026, 10, 3)))
+    }
+
     // MARK: - 边界与一致性
 
     func testLeapMonthPrefixInLunarLabel() {
