@@ -30,22 +30,27 @@ enum SettingsPalette {
     static let destructive = NSColor(srgbRed: 1.0, green: 0.27, blue: 0.23, alpha: 1)
 }
 
-/// 圆角分组盒：垂直堆叠行，行间以系统分隔线分隔（近似 SwiftUI `Form(.grouped)` 的分组卡片）。
+/// 圆角分组卡片：相关设置行共用一个 `controlBackgroundColor` 背景，行间缩进分隔线。
 @MainActor
-final class SettingsGroup: NSBox {
+final class SettingsGroup: NSView {
+    private let container = FlippedView()
+
     init(rows: [NSView]) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
-        boxType = .custom
-        borderWidth = 0
-        cornerRadius = SettingsControlMetrics.groupCornerRadius
-        fillColor = .controlBackgroundColor
-        contentViewMargins = .zero
-        titlePosition = .noTitle
+        wantsLayer = true
+        layer?.cornerRadius = SettingsControlMetrics.groupCornerRadius
+        layer?.masksToBounds = true
+        setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        let container = FlippedView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        contentView = container
+        addSubview(container)
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: topAnchor),
+            container.leadingAnchor.constraint(equalTo: leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: trailingAnchor),
+            container.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
 
         var previous: NSView?
         for row in rows {
@@ -79,8 +84,13 @@ final class SettingsGroup: NSBox {
         container.invalidateIntrinsicContentSize()
     }
 
+    override var wantsUpdateLayer: Bool { true }
+
+    override func updateLayer() {
+        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+    }
+
     override var intrinsicContentSize: NSSize {
-        guard let container = contentView else { return super.intrinsicContentSize }
         container.layoutSubtreeIfNeeded()
         let height = container.intrinsicContentSize.height
         return NSSize(width: NSView.noIntrinsicMetric, height: height)

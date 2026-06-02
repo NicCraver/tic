@@ -37,7 +37,7 @@ final class CalendarSettingsViewController: SettingsPaneViewController {
             subtitle: "联网获取国务院公布的放假/调休（开源项目 holiday-cn），仅下载公开文件、不上传任何信息；关闭则只用内置数据",
             control: holidaysSwitch
         )
-        return makeSettingsCards([dotsRow, termsRow, holidaysRow])
+        return [makeSettingsGroupedCard([dotsRow, termsRow, holidaysRow])]
     }
 
     @objc private func dotsChanged() {

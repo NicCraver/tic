@@ -18,6 +18,11 @@ class SettingsPaneViewController: NSViewController {
     func makeFooter() -> NSView? { nil }
 
     override func loadView() {
+        let titleLabel = NSTextField(labelWithString: paneTitle)
+        titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
+        titleLabel.setContentHuggingPriority(.required, for: .vertical)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
         let scrollView = NSScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.drawsBackground = false
@@ -32,12 +37,6 @@ class SettingsPaneViewController: NSViewController {
         column.alignment = .leading
         column.spacing = SettingsTheme.cardSpacing
         column.translatesAutoresizingMaskIntoConstraints = false
-
-        let titleLabel = NSTextField(labelWithString: paneTitle)
-        titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
-        titleLabel.setContentHuggingPriority(.required, for: .vertical)
-        column.addArrangedSubview(titleLabel)
-        column.setCustomSpacing(SettingsTheme.titleToContentSpacing, after: titleLabel)
 
         let contentViews = makeContent()
         for view in contentViews {
@@ -58,6 +57,7 @@ class SettingsPaneViewController: NSViewController {
         scrollView.documentView = documentView
 
         let container = NSView()
+        container.addSubview(titleLabel)
         container.addSubview(scrollView)
 
         let padding = SettingsTheme.panePadding
@@ -65,7 +65,11 @@ class SettingsPaneViewController: NSViewController {
         preferredWidth.priority = .defaultHigh
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor),
+            titleLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: padding),
+            titleLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: padding),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -padding),
+
+            scrollView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: SettingsTheme.titleToContentSpacing),
             scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
@@ -75,7 +79,7 @@ class SettingsPaneViewController: NSViewController {
             documentView.trailingAnchor.constraint(equalTo: scrollView.contentView.trailingAnchor),
             documentView.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
 
-            column.topAnchor.constraint(equalTo: documentView.topAnchor, constant: padding),
+            column.topAnchor.constraint(equalTo: documentView.topAnchor),
             column.leadingAnchor.constraint(equalTo: documentView.leadingAnchor, constant: padding),
             column.bottomAnchor.constraint(equalTo: documentView.bottomAnchor, constant: -padding),
             column.trailingAnchor.constraint(lessThanOrEqualTo: documentView.trailingAnchor, constant: -padding),
