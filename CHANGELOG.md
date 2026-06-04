@@ -9,6 +9,14 @@
 
 - （下一版本变更写在这里）
 
+## [1.1.1] - 2026-06-04
+
+### Changed
+
+- GitHub Release 改为 DMG 分发，镜像内含「应用程序」快捷方式便于拖放安装
+- Release 构建增加 ad-hoc 整包签名；README 补充 Gatekeeper「已损坏」说明
+- 应用图标资源更新（不透明 1024 母版）
+
 ## [1.1.0] - 2026-06-02
 
 ### Added
@@ -38,6 +46,7 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/NicCraver/tic/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/NicCraver/tic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/NicCraver/tic/releases/tag/v1.0.0
