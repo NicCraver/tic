@@ -17,7 +17,7 @@
    git push origin v1.0.1
    ```
 
-5. GitHub Actions `Release` 工作流会自动构建 `Tic.app`、打包 zip 并创建 GitHub Release。
+5. GitHub Actions `Release` 工作流会自动构建 `Tic.app`、打成含「应用程序」快捷方式的 DMG 并创建 GitHub Release。
 6. 在 Release 页面检查附件与说明；必要时编辑 Release 正文（可从 CHANGELOG 复制）。
 
 ## 本地验证（推送 tag 前）
@@ -33,6 +33,16 @@ xcodebuild test \
   CODE_SIGN_IDENTITY=-
 ```
 
+本地试打 DMG（需先 Release 构建出 `Tic.app`）：
+
+```bash
+APP=build/DerivedData/Build/Products/Release/Tic.app
+codesign --sign - --force --deep --timestamp=none "$APP"
+chmod +x scripts/make-release-dmg.sh
+./scripts/make-release-dmg.sh "$APP" /tmp/Tic-test.dmg
+open /tmp/Tic-test.dmg
+```
+
 ## 说明
 
-当前 Release 为**未签名**构建，用户首次打开需按 [README](../README.md) 处理 Gatekeeper。
+当前 Release 为**未公证**构建（CI 会做 ad-hoc 整包签名）。用户从浏览器下载后可能看到 **「已损坏」** 或无法验证开发者，需按 [README](../README.md) 用「右键打开」或 `xattr -cr` 处理隔离属性；非 Apple 开发者账号公证前无法完全避免。

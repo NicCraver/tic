@@ -49,15 +49,21 @@ open Tic.xcodeproj
 
 ## 下载预编译版
 
-见 [Releases](https://github.com/NicCraver/tic/releases)。
+见 [Releases](https://github.com/NicCraver/tic/releases)（`.dmg`）。打开镜像后，将 **Tic** 拖到 **应用程序** 文件夹即可安装。
 
-> **首次打开：** 若系统提示无法验证开发者，请 **右键应用 → 打开**，或在终端执行：
+> **首次打开（未签名构建）：** 从浏览器下载后，macOS 可能提示 **「已损坏，无法打开」** 或 **无法验证开发者**——应用并未真的损坏，是 Gatekeeper 拦截未公证应用。任选其一：
 >
-> ```bash
-> xattr -cr /Applications/Tic.app
-> ```
+> 1. 打开 DMG 后 **右键 `Tic.app` → 打开**（首次需确认），再拖入「应用程序」；或
+> 2. 终端清除下载隔离属性（路径改为你实际位置）：
 >
-> （路径改为你实际安装位置。）
+>    ```bash
+>    xattr -cr ~/Downloads/Tic.app
+>    open ~/Downloads/Tic.app
+>    ```
+>
+> 若隔离在 DMG 上，可对挂载卷内的应用执行 `xattr -cr`，或对下载的 `.dmg` 执行后再打开。
+>
+> 预编译包为 **Apple Silicon（arm64）**，需 macOS 14+。Intel Mac 请 [从源码构建](#从源码构建)。
 
 ## 技术栈
 

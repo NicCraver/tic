@@ -30,11 +30,22 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY=-
 
-      - name: Package app
+      - name: Ad-hoc sign app bundle
         run: |
           APP_PATH="build/DerivedData/Build/Products/Release/Tic.app"
           test -d "$APP_PATH"
-          ditto -c -k --keepParent "$APP_PATH" "Tic-${GITHUB_REF_NAME}-macOS.zip"
+          # 整包 ad-hoc 签名，减轻 Gatekeeper 对「已损坏」的误报（仍需用户处理隔离属性）
+          codesign --sign - --force --deep --timestamp=none "$APP_PATH"
+          codesign --verify --deep --strict "$APP_PATH"
+
+      - name: Create DMG
+        run: |
+          APP_PATH="build/DerivedData/Build/Products/Release/Tic.app"
+          chmod +x scripts/make-release-dmg.sh
+          scripts/make-release-dmg.sh \
+            "$APP_PATH" \
+            "Tic-${GITHUB_REF_NAME}-macOS.dmg" \
+            "Tic"
 
       - name: Extract release notes
         run: |
@@ -54,6 +65,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: Tic-${{ github.ref_name }}-macOS.zip
+          files: Tic-${{ github.ref_name }}-macOS.dmg
           body_path: release-notes.md
           generate_release_notes: false
