@@ -19,6 +19,10 @@ struct TicApp: App {
                     SettingsWindowManager.show()
                 }
                 .keyboardShortcut(",", modifiers: .command)
+
+                Button("检查更新…") {
+                    NotificationCenter.default.post(name: .checkForUpdates, object: nil)
+                }
             }
         }
     }

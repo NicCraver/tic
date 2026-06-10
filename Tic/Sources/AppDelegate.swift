@@ -5,6 +5,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("Tic 已启动")
         AppSettings.migrateLegacyFormatIfNeeded()
         HolidayStore.shared.refreshIfNeeded()
+        UpdateChecker.shared.registerForMenuCommands()
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            UpdateChecker.shared.checkAutomaticallyIfNeeded()
+        }
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(configurePopoverWindow(_:)),

@@ -15,6 +15,11 @@ final class AboutSettingsViewController: SettingsPaneViewController {
         [
             SettingsGroup(row: makeHeaderRow()),
             SettingsGroup(rows: [
+                SettingsActionRow(
+                    title: "检查更新",
+                    subtitle: "查询 GitHub 最新版本",
+                    action: { UpdateChecker.shared.checkManually() }
+                ),
                 SettingsLinkRow(
                     title: "反馈与问题",
                     subtitle: "GitHub Issues",
@@ -71,6 +76,60 @@ final class AboutSettingsViewController: SettingsPaneViewController {
             text.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -(insets.bottom + 4)),
         ])
         return row
+    }
+}
+
+/// 关于页可点击操作行：整行点击触发操作，悬停显示手型光标。
+@MainActor
+final class SettingsActionRow: NSView {
+    private let action: () -> Void
+
+    init(title: String, subtitle: String, action: @escaping () -> Void) {
+        self.action = action
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let titleLabel = NSTextField(labelWithString: title)
+        titleLabel.font = .systemFont(ofSize: 13)
+
+        let subtitleLabel = NSTextField(labelWithString: subtitle)
+        subtitleLabel.font = .systemFont(ofSize: 11)
+        subtitleLabel.textColor = .secondaryLabelColor
+
+        let text = NSStackView(views: [titleLabel, subtitleLabel])
+        text.orientation = .vertical
+        text.alignment = .leading
+        text.spacing = 2
+
+        let chevron = NSImageView()
+        chevron.image = NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil)
+        chevron.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 10, weight: .bold)
+        chevron.contentTintColor = .tertiaryLabelColor
+
+        let content = makeSettingsRow(leading: text, trailing: chevron, tallLeading: true)
+        content.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(content)
+        NSLayoutConstraint.activate([
+            content.topAnchor.constraint(equalTo: topAnchor),
+            content.bottomAnchor.constraint(equalTo: bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+    }
+
+    override var intrinsicContentSize: NSSize {
+        layoutSubtreeIfNeeded()
+        return subviews.first?.intrinsicContentSize ?? super.intrinsicContentSize
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func mouseDown(with event: NSEvent) {
+        action()
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
     }
 }
 

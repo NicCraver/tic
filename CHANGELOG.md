@@ -9,6 +9,18 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.0] - 2026-06-10
+
+### Added
+
+- 设置「关于」与应用菜单「检查更新…」：通过 GitHub Releases API 检测新版本并下载 DMG
+- 启动后每 24 小时自动静默检查更新（有新版本时提示）
+- Agent 开发流程：`restart-dev.sh` 与 Cursor hooks 支持改代码后自动编译重启
+
+### Changed
+
+- 日历弹窗高度随月历行数自适应，切换月份时保持菜单栏顶边锚定
+
 ## [1.1.1] - 2026-06-04
 
 ### Changed
@@ -46,7 +58,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/NicCraver/tic/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/NicCraver/tic/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/NicCraver/tic/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/NicCraver/tic/releases/tag/v1.0.0
