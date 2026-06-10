@@ -36,10 +36,8 @@ final class AboutSettingsViewController: SettingsPaneViewController {
 
     private func makeHeaderRow() -> NSView {
         let icon = NSImageView()
-        let config = NSImage.SymbolConfiguration(pointSize: 44, weight: .regular)
-            .applying(NSImage.SymbolConfiguration(hierarchicalColor: .systemBlue))
-        icon.image = NSImage(systemSymbolName: "calendar.circle.fill", accessibilityDescription: "Tic")
-        icon.symbolConfiguration = config
+        icon.image = Self.appIconImage()
+        icon.imageScaling = .scaleProportionallyUpOrDown
         icon.translatesAutoresizingMaskIntoConstraints = false
         icon.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -76,6 +74,16 @@ final class AboutSettingsViewController: SettingsPaneViewController {
             text.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -(insets.bottom + 4)),
         ])
         return row
+    }
+
+    private static func appIconImage() -> NSImage {
+        if let icon = NSApp.applicationIconImage {
+            return icon
+        }
+        if let icon = NSImage(named: NSImage.applicationIconName) {
+            return icon
+        }
+        return NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath)
     }
 }
 

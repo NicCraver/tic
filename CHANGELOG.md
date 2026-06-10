@@ -9,6 +9,18 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.3] - 2026-06-10
+
+### Added
+
+- 应用内下载更新：发现新版本后自动下载 DMG 并显示进度，完成后自动打开安装镜像（不再跳转浏览器）
+- 检查更新时显示加载浮层；更新说明 Markdown 格式化展示
+
+### Changed
+
+- 关于页使用真实应用图标
+- 新用户默认开启「登录时启动」
+
 ## [1.2.2] - 2026-06-10
 
 ### Changed
@@ -70,7 +82,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.3...HEAD
+[1.2.3]: https://github.com/NicCraver/tic/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/NicCraver/tic/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/NicCraver/tic/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/NicCraver/tic/compare/v1.1.1...v1.2.0

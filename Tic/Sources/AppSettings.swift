@@ -70,6 +70,7 @@ enum AppSettings {
     static let showAnnotationDotsKey = "showAnnotationDots"
     static let showSolarTermsKey = "showSolarTerms"
     static let autoUpdateHolidaysKey = "autoUpdateHolidays"
+    static let launchAtLoginKey = "launchAtLogin"
     static let legacyDateFormatStyleKey = "dateFormatStyle"
 
     static func migrateLegacyFormatIfNeeded() {

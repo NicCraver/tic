@@ -43,65 +43,42 @@ final class UpdateChecker {
 
     private func performCheck(automatic: Bool) async {
         isChecking = true
+        if !automatic {
+            UpdateCheckingIndicator.shared.show()
+        }
         defer { isChecking = false }
 
         do {
             if let release = try await service.checkForUpdates() {
                 recordCheckTime()
-                showUpdateAvailable(release)
+                dismissManualIndicator(ifManual: !automatic)
+                let version = service.stripVersionPrefix(release.tagName)
+                UpdateAvailablePanel.show(
+                    release: release,
+                    currentVersion: UpdateService.currentVersion,
+                    version: version
+                )
             } else {
                 recordCheckTime()
+                dismissManualIndicator(ifManual: !automatic)
                 if !automatic {
-                    showUpToDate()
+                    UpdatePrompt.showUpToDate(currentVersion: UpdateService.currentVersion)
                 }
             }
         } catch {
+            dismissManualIndicator(ifManual: !automatic)
             if !automatic {
-                showError(error)
+                UpdatePrompt.showError(error)
             }
         }
+    }
+
+    private func dismissManualIndicator(ifManual: Bool) {
+        guard ifManual else { return }
+        UpdateCheckingIndicator.shared.dismiss()
     }
 
     private func recordCheckTime() {
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: lastCheckKey)
-    }
-
-    private func showUpToDate() {
-        let alert = NSAlert()
-        alert.messageText = "已是最新版本"
-        alert.informativeText = "当前版本：\(UpdateService.currentVersion)"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "好")
-        alert.runModal()
-    }
-
-    private func showUpdateAvailable(_ release: GitHubRelease) {
-        let version = service.stripVersionPrefix(release.tagName)
-        let notes = release.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        let preview = notes.isEmpty ? "请前往 GitHub 查看更新说明。" : String(notes.prefix(500))
-
-        let alert = NSAlert()
-        alert.messageText = "发现新版本 \(version)"
-        alert.informativeText = "当前版本：\(UpdateService.currentVersion)\n\n\(preview)"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "下载更新")
-        alert.addButton(withTitle: "稍后")
-        let response = alert.runModal()
-        guard response == .alertFirstButtonReturn else { return }
-        openDownload(for: release)
-    }
-
-    private func openDownload(for release: GitHubRelease) {
-        if let dmgURL = release.dmgDownloadURL {
-            NSWorkspace.shared.open(dmgURL)
-            return
-        }
-        NSWorkspace.shared.open(release.htmlURL)
-    }
-
-    private func showError(_ error: Error) {
-        let alert = NSAlert(error: error)
-        alert.messageText = "检查更新失败"
-        alert.runModal()
     }
 }

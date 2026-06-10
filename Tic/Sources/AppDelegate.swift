@@ -4,6 +4,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("Tic 已启动")
         AppSettings.migrateLegacyFormatIfNeeded()
+        LaunchAtLoginManager.shared.applyPreferredStateOnLaunch()
         HolidayStore.shared.refreshIfNeeded()
         UpdateChecker.shared.registerForMenuCommands()
         Task { @MainActor in
