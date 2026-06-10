@@ -5,14 +5,11 @@ struct CalendarPopoverHeader: View {
     let year: Int
     let relativeOffsetLabel: String?
     let nextRestDayCountdownLabel: String?
-    let themeToggleTitle: String
-    let themeToggleSystemImage: String
     let palette: CalendarPalette
     let onShowMonthPicker: () -> Void
     let onPreviousMonth: () -> Void
     let onGoToToday: () -> Void
     let onNextMonth: () -> Void
-    let onToggleTheme: () -> Void
     let onShowSettings: () -> Void
 
     var body: some View {
@@ -61,25 +58,18 @@ struct CalendarPopoverHeader: View {
                         .accessibilityLabel("距离\(nextRestDayCountdownLabel)")
                 }
             }
+            .layoutPriority(1)
 
             Spacer(minLength: 0)
 
             HStack(spacing: 10) {
                 monthNavigationControl
 
-                HStack(spacing: 8) {
-                    headerIconButton(
-                        systemName: themeToggleSystemImage,
-                        accessibilityLabel: "切换为\(themeToggleTitle)外观",
-                        action: onToggleTheme
-                    )
-
-                    headerIconButton(
-                        systemName: "gearshape.fill",
-                        accessibilityLabel: "打开设置",
-                        action: onShowSettings
-                    )
-                }
+                headerIconButton(
+                    systemName: "gearshape.fill",
+                    accessibilityLabel: "打开设置",
+                    action: onShowSettings
+                )
             }
         }
     }

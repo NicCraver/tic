@@ -9,6 +9,12 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.2] - 2026-06-10
+
+### Changed
+
+- 日历弹窗头部移除颜色模式快捷切换，避免月份标题被挤压；外观请在设置中调整
+
 ## [1.2.1] - 2026-06-10
 
 ### Changed
@@ -64,7 +70,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/NicCraver/tic/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/NicCraver/tic/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/NicCraver/tic/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/NicCraver/tic/compare/v1.1.0...v1.1.1

@@ -70,14 +70,6 @@ struct CalendarPopoverView: View {
         return ChineseCalendarSupport.nextRestDayCountdownLabel(from: selectedDate)
     }
 
-    private var themeToggleTitle: String {
-        resolvedColorScheme == .dark ? "浅色" : "深色"
-    }
-
-    private var themeToggleSystemImage: String {
-        resolvedColorScheme == .dark ? "sun.max.fill" : "moon.fill"
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             CalendarPopoverHeader(
@@ -85,14 +77,11 @@ struct CalendarPopoverView: View {
                 year: displayedYear,
                 relativeOffsetLabel: relativeOffsetLabel,
                 nextRestDayCountdownLabel: nextRestDayCountdownLabel,
-                themeToggleTitle: themeToggleTitle,
-                themeToggleSystemImage: themeToggleSystemImage,
                 palette: palette,
                 onShowMonthPicker: showMonthPicker,
                 onPreviousMonth: { shiftMonth(by: -1) },
                 onGoToToday: goToToday,
                 onNextMonth: { shiftMonth(by: 1) },
-                onToggleTheme: toggleTheme,
                 onShowSettings: showSettings
             )
             .popover(isPresented: $isMonthPickerPresented, arrowEdge: .top) {
@@ -233,10 +222,6 @@ struct CalendarPopoverView: View {
             upcomingEvents = nextUpcomingEvents
             pickerYear = calendar.component(.year, from: today)
         }
-    }
-
-    private func toggleTheme() {
-        appThemeRaw = resolvedColorScheme == .dark ? AppTheme.light.rawValue : AppTheme.dark.rawValue
     }
 
     private func showSettings() {
