@@ -9,6 +9,12 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.4] - 2026-06-10
+
+### Changed
+
+- 测试版本：用于验证 v1.2.3 应用内下载更新能否发现新版本并完成安装
+
 ## [1.2.3] - 2026-06-10
 
 ### Added
@@ -82,7 +88,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/NicCraver/tic/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/NicCraver/tic/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/NicCraver/tic/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/NicCraver/tic/compare/v1.2.0...v1.2.1
