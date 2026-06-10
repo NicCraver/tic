@@ -22,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let contentView = window.contentView {
             disableFocusRing(in: contentView)
         }
+
+        MenuBarPopoverWindowAnchor.shared.beginObserving(window)
+        MenuBarPopoverWindowAnchor.shared.refreshAnchor(for: window)
     }
 
     @MainActor

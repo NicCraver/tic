@@ -1,5 +1,26 @@
 import SwiftUI
 
+enum CalendarPopoverLayout {
+    static let width: CGFloat = 397
+
+    static let fiveRowCellHeight: CGFloat = 55
+    static let fiveRowSpacing: CGFloat = 17
+    static let sixRowCellHeight: CGFloat = 46
+    static let sixRowSpacing: CGFloat = 10
+
+    static func gridHeight(rowCount: Int) -> CGFloat {
+        guard rowCount > 0 else { return 0 }
+        if rowCount > 5 {
+            return CGFloat(rowCount) * sixRowCellHeight + CGFloat(rowCount - 1) * sixRowSpacing
+        }
+        return CGFloat(rowCount) * fiveRowCellHeight + CGFloat(rowCount - 1) * fiveRowSpacing
+    }
+
+    static let maxGridHeight = max(gridHeight(rowCount: 5), gridHeight(rowCount: 6))
+
+    static let upcomingRowHeight: CGFloat = 65
+}
+
 enum CalendarPopoverTheme {
     static func palette(for scheme: ColorScheme) -> CalendarPalette {
         switch scheme {

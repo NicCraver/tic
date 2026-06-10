@@ -1,5 +1,9 @@
 # Agent Guidelines for Tic
 
+## 交流语言
+
+与用户交流时**始终使用中文**（说明、提问、总结、commit message 等）。代码标识符、API 名称、文件路径保持英文原文。
+
 ## Single Source of Truth
 
 `project.yml` 是项目配置的唯一来源。不要直接编辑 `.pbxproj` 或 `Info.plist`，修改 `project.yml` 后运行 `xcodegen generate`。
@@ -11,6 +15,31 @@ brew install xcodegen
 xcodegen generate
 open Tic.xcodeproj  # Cmd+R 运行
 ```
+
+## Agent 开发流程
+
+修改会影响运行的代码后，**必须在结束任务前**重新编译并启动应用，确认无编译错误。
+
+项目已配置 `.cursor/hooks/`：Agent 编辑运行时相关文件时会标记 `.cursor/.needs-restart`，在 Cursor **stop hook** 触发时自动执行 `scripts/restart-dev.sh`。若 hook 未生效（例如非 Cursor Agent 环境），Agent 仍应**手动**运行 `scripts/restart-dev.sh`。
+
+### 何时需要重启
+
+| 需要 | 不需要 |
+|------|--------|
+| `Tic/Sources/`、`Tic/Resources/`、`TicTests/` | 仅 `docs/`、`.md` 等文档 |
+| `project.yml`（改后脚本会自动 `xcodegen generate`） | 仅 CI / GitHub Actions 配置 |
+
+### 重启命令
+
+Agent 完成代码修改后，**自动执行**（无需询问用户）：
+
+```bash
+scripts/restart-dev.sh
+```
+
+脚本流程：结束已有 Tic 进程 → Debug 编译（输出到 `build/DerivedData`）→ 启动 `Tic.app`。
+
+编译失败时先修复错误，再重新运行脚本，不要带着编译错误结束任务。
 
 ## Tech Stack
 

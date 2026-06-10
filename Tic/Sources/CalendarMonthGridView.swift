@@ -16,11 +16,11 @@ struct CalendarMonthGridView: View {
     }
 
     private var rowSpacing: CGFloat {
-        rowCount > 5 ? 10 : 17
+        rowCount > 5 ? CalendarPopoverLayout.sixRowSpacing : CalendarPopoverLayout.fiveRowSpacing
     }
 
     private var cellHeight: CGFloat {
-        rowCount > 5 ? 46 : 55
+        rowCount > 5 ? CalendarPopoverLayout.sixRowCellHeight : CalendarPopoverLayout.fiveRowCellHeight
     }
 
     var body: some View {

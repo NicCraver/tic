@@ -25,3 +25,4 @@ Package.resolved
 # Cursor / agent skills (not part of the app)
 .agents/
 skills-lock.json
+.cursor/.needs-restart
