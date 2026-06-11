@@ -36,10 +36,26 @@ final class UpdateSession {
 
         downloadTask = Task {
             do {
-                let downloadsDir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
-                let destination = downloadsDir.appendingPathComponent(dmgURL.lastPathComponent)
+                guard let downloadsDir = FileManager.default.urls(
+                    for: .downloadsDirectory,
+                    in: .userDomainMask
+                ).first else {
+                    throw UpdateDownloadError.invalidResponse
+                }
 
-                let fileURL = try await downloader.download(from: dmgURL, to: destination) { [weak self] progress in
+                let filename = dmgURL.lastPathComponent
+                guard let destination = TrustedDownloadPolicy.safeDestinationURL(
+                    filename: filename,
+                    in: downloadsDir
+                ), TrustedDownloadPolicy.isExpectedDMGFilename(filename, version: version) else {
+                    throw UpdateDownloadError.untrustedURL
+                }
+
+                let fileURL = try await downloader.download(
+                    from: dmgURL,
+                    expectedVersion: version,
+                    to: destination
+                ) { [weak self] progress in
                     self?.downloadProgress = progress
                 }
 

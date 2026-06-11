@@ -1,5 +1,7 @@
 # 发版说明（维护者）
 
+应用内检查更新、DMG 下载与用户侧流程见 [`app-update.md`](app-update.md)。
+
 版本号**仅**在 `project.yml` 中维护：
 
 - `MARKETING_VERSION`：用户可见版本（SemVer，如 `1.0.1`）

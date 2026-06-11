@@ -24,6 +24,8 @@ final class HolidayStore: @unchecked Sendable {
     private let session: URLSession
     private let beijing: Calendar
     private let lastFetchKey = "holidayLastFetchedAt"
+    /// holiday-cn 固定 commit，避免 `@master` 浮动分支被篡改。
+    private static let holidayDataCommit = "3e370bbaed0f"
 
     private init() {
         var calendar = Calendar(identifier: .gregorian)
@@ -67,6 +69,7 @@ final class HolidayStore: @unchecked Sendable {
         for year in years {
             guard let data = await fetch(year: year),
                   let parsed = HolidayStore.parse(data),
+                  parsed.year == year,
                   !parsed.days.isEmpty
             else { continue }
             apply(year: parsed.year, days: parsed.days)
@@ -82,7 +85,17 @@ final class HolidayStore: @unchecked Sendable {
     private func fetch(year: Int) async -> Data? {
         for url in HolidayStore.urls(forYear: year) {
             guard let (data, response) = try? await session.data(from: url),
-                  let http = response as? HTTPURLResponse, http.statusCode == 200
+                  let http = response as? HTTPURLResponse,
+                  http.statusCode == 200,
+                  HTTPBodySizeLimit.isWithinLimit(
+                      contentLength: http.expectedContentLength > 0
+                          ? Int(http.expectedContentLength)
+                          : nil,
+                      maxBytes: HTTPBodySizeLimit.holidayJSONBytes
+                  ),
+                  HTTPBodySizeLimit.isWithinLimit(data: data, maxBytes: HTTPBodySizeLimit.holidayJSONBytes),
+                  let parsed = HolidayStore.parse(data),
+                  parsed.year == year
             else { continue }
             return data
         }
@@ -90,9 +103,10 @@ final class HolidayStore: @unchecked Sendable {
     }
 
     private static func urls(forYear year: Int) -> [URL] {
-        [
-            "https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/\(year).json",
-            "https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/\(year).json",
+        let commit = holidayDataCommit
+        return [
+            "https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@\(commit)/\(year).json",
+            "https://raw.githubusercontent.com/NateScarlet/holiday-cn/\(commit)/\(year).json",
         ].compactMap(URL.init(string:))
     }
 
@@ -131,7 +145,9 @@ final class HolidayStore: @unchecked Sendable {
         for year in 2024...2026 {
             guard let url = Bundle.main.url(forResource: "\(year)", withExtension: "json"),
                   let data = try? Data(contentsOf: url),
-                  let parsed = HolidayStore.parse(data)
+                  HTTPBodySizeLimit.isWithinLimit(data: data, maxBytes: HTTPBodySizeLimit.holidayJSONBytes),
+                  let parsed = HolidayStore.parse(data),
+                  parsed.year == year
             else { continue }
             apply(year: parsed.year, days: parsed.days)
         }
@@ -142,8 +158,11 @@ final class HolidayStore: @unchecked Sendable {
               let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
         else { return }
         for file in files where file.pathExtension == "json" {
-            guard let data = try? Data(contentsOf: file),
-                  let parsed = HolidayStore.parse(data)
+            guard let year = Int(file.deletingPathExtension().lastPathComponent),
+                  let data = try? Data(contentsOf: file),
+                  HTTPBodySizeLimit.isWithinLimit(data: data, maxBytes: HTTPBodySizeLimit.holidayJSONBytes),
+                  let parsed = HolidayStore.parse(data),
+                  parsed.year == year
             else { continue }
             apply(year: parsed.year, days: parsed.days)
         }

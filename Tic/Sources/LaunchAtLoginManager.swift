@@ -1,7 +1,9 @@
+import os
 import ServiceManagement
 
 @MainActor
 final class LaunchAtLoginManager {
+    private let logger = Logger(subsystem: "me.nic.tic", category: "LaunchAtLogin")
     static let shared = LaunchAtLoginManager()
 
     var isEnabled: Bool {
@@ -22,7 +24,7 @@ final class LaunchAtLoginManager {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("登录时启动设置失败: \(error.localizedDescription)")
+            logger.error("登录时启动设置失败: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

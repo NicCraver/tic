@@ -8,7 +8,7 @@
 核心已实现于 [`Tic/Sources/Holiday/HolidayStore.swift`](../Tic/Sources/Holiday/HolidayStore.swift)：
 
 - **打包兜底**：[`Tic/Resources/holidays/{2024,2025,2026}.json`](../Tic/Resources/holidays/)（holiday-cn 原格式裁剪），离线 / 首启即可用。
-- **联网刷新**：启动时（`AppDelegate`）从 holiday-cn 拉取**当年 + 次年**，jsDelivr 主、GitHub raw 备；节流 24h；成功写入 `Application Support/Tic/holidays/{year}.json`，下次启动优先于打包数据。
+- **联网刷新**：启动时（`AppDelegate`）从 holiday-cn 拉取**当年 + 次年**（**固定 commit pin**，非 `@master`），jsDelivr 主、GitHub raw 备；响应 ≤ 2MB、解析后 `year` 须与请求一致；节流 24h；成功写入 `Application Support/Tic/holidays/{year}.json`，下次启动优先于打包数据。
 - **统一格式**：解析为 `DayAnnotation`（`subtitle` = 放假节日名 / 补班为 nil，`badge` = 休/班），`ChineseCalendarSupport` 通过 `HolidayStore.shared.annotation(forKey:)` 查询，零摩擦替换原硬编码字典。
 - **线程安全**：`HolidayStore` 用 `NSLock` 保护内部表，刷新在后台 Task，完成后主线程广播 `.holidayDataDidUpdate`，月历清缓存重建。
 - **隐私开关**：设置「日历」分区新增「自动更新节假日数据」（默认开），关闭则只用打包数据。

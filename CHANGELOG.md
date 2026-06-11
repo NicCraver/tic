@@ -9,6 +9,19 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.5] - 2026-06-10
+
+### Added
+
+- 更新下载安全策略：DMG URL 域名白名单、文件名与版本校验、重定向拦截、落盘路径与体积限制
+- 节假日联网数据 pin 固定 commit，响应大小与年份校验
+- 文档 [`docs/app-update.md`](docs/app-update.md) 记录应用内更新方案与安全策略
+
+### Changed
+
+- 启动时菜单栏弹窗窗口配置去重，减少重复处理
+- 日志由 `print` 改为 `os.Logger`
+
 ## [1.2.4] - 2026-06-10
 
 ### Changed
@@ -88,7 +101,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/NicCraver/tic/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/NicCraver/tic/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/NicCraver/tic/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/NicCraver/tic/compare/v1.2.1...v1.2.2

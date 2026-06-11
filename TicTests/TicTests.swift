@@ -102,4 +102,27 @@ final class TicTests: XCTestCase {
         XCTAssertTrue(oct1.contains("国庆节"))
         XCTAssertFalse(oct2.contains("国庆节"))
     }
+
+    // MARK: - 更新下载安全策略
+
+    func testTrustedReleaseAssetURLAcceptsOfficialDMG() {
+        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
+        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testTrustedReleaseAssetURLRejectsWrongVersion() {
+        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v9.9.9-macOS.dmg")!
+        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testTrustedReleaseAssetURLRejectsForeignHost() {
+        let url = URL(string: "https://evil.example.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
+        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testSafeDestinationURLRejectsPathTraversal() {
+        let downloads = FileManager.default.temporaryDirectory
+        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "../Tic-v1.0.0-macOS.dmg", in: downloads))
+        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "foo/bar.dmg", in: downloads))
+    }
 }

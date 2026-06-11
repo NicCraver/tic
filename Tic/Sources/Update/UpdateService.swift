@@ -16,6 +16,8 @@ enum UpdateError: LocalizedError, Sendable {
     case rateLimited
     case apiError(statusCode: Int)
     case parseError
+    case untrustedDownloadURL
+    case responseTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -29,6 +31,10 @@ enum UpdateError: LocalizedError, Sendable {
             return "服务器返回错误（\(code)）"
         case .parseError:
             return "无法解析更新信息"
+        case .untrustedDownloadURL:
+            return "更新包地址未通过安全校验"
+        case .responseTooLarge:
+            return "服务器响应过大"
         }
     }
 }
@@ -45,6 +51,13 @@ final class UpdateService: Sendable {
     }
 
     private let logger = Logger(subsystem: "me.nic.tic", category: "UpdateService")
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }()
 
     func checkForUpdates() async throws -> GitHubRelease? {
         guard let url = URL(string: Self.releasesURL) else {
@@ -56,7 +69,7 @@ final class UpdateService: Sendable {
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("Tic/\(Self.currentVersion)", forHTTPHeaderField: "User-Agent")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw UpdateError.invalidResponse
@@ -71,10 +84,26 @@ final class UpdateService: Sendable {
             throw UpdateError.apiError(statusCode: httpResponse.statusCode)
         }
 
+        let contentLength = httpResponse.expectedContentLength > 0
+            ? Int(httpResponse.expectedContentLength)
+            : nil
+        guard HTTPBodySizeLimit.isWithinLimit(
+            contentLength: contentLength,
+            maxBytes: HTTPBodySizeLimit.githubAPIBytes
+        ), HTTPBodySizeLimit.isWithinLimit(data: data, maxBytes: HTTPBodySizeLimit.githubAPIBytes) else {
+            throw UpdateError.responseTooLarge
+        }
+
         let release = try parseRelease(data: data)
         let latestVersion = stripVersionPrefix(release.tagName)
         guard isNewer(latest: latestVersion, current: Self.currentVersion) else {
             return nil
+        }
+        guard let dmgURL = release.dmgDownloadURL,
+              TrustedDownloadPolicy.isTrustedReleaseAssetURL(dmgURL, expectedVersion: latestVersion)
+        else {
+            logger.error("Release DMG URL 未通过安全校验")
+            throw UpdateError.untrustedDownloadURL
         }
         return release
     }
@@ -90,13 +119,15 @@ final class UpdateService: Sendable {
 
         let name = json["name"] as? String ?? tagName
         let body = json["body"] as? String ?? ""
+        let version = stripVersionPrefix(tagName)
         var dmgDownloadURL: URL?
         if let assets = json["assets"] as? [[String: Any]] {
             for asset in assets {
                 guard let assetName = asset["name"] as? String,
-                      assetName.hasSuffix(".dmg"),
+                      TrustedDownloadPolicy.isExpectedDMGFilename(assetName, version: version),
                       let urlString = asset["browser_download_url"] as? String,
-                      let url = URL(string: urlString)
+                      let url = URL(string: urlString),
+                      TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: version)
                 else { continue }
                 dmgDownloadURL = url
                 break
