@@ -120,6 +120,18 @@ final class TicTests: XCTestCase {
         XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
     }
 
+    func testTrustedReleaseAssetURLAcceptsGitHubCDNRedirect() {
+        let url = URL(string: "https://release-assets.githubusercontent.com/github-production-release-asset/1252199363/abc?response-content-disposition=attachment%3B%20filename%3DTic-v1.2.5-macOS.dmg")!
+        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.5"))
+    }
+
+    func testFileSizeReadsNSNumberAttribute() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("tic-size-test.bin")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(repeating: 0xAB, count: 42).write(to: url)
+        XCTAssertEqual(TrustedDownloadPolicy.fileSize(at: url), 42)
+    }
+
     func testSafeDestinationURLRejectsPathTraversal() {
         let downloads = FileManager.default.temporaryDirectory
         XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "../Tic-v1.0.0-macOS.dmg", in: downloads))

@@ -124,7 +124,7 @@ let destination = downloadsDir.appendingPathComponent(dmgURL.lastPathComponent)
 
 | 措施 | 说明 |
 |------|------|
-| DMG URL 白名单 | 仅允许 `https` + `github.com` / `objects.githubusercontent.com`，路径须含 `/NicCraver/tic/releases/download/` |
+| DMG URL 白名单 | `github.com` 走 `/NicCraver/tic/releases/download/`；302 后允许 `release-assets.githubusercontent.com` / `objects.githubusercontent.com`（文件名须在 URL 中出现） |
 | 文件名约束 | 必须为 `Tic-v{version}-macOS.dmg`，与 Release `tag_name` 去 `v` 后一致 |
 | 重定向拦截 | `URLSessionTaskDelegate` 拒绝跳转到非白名单域名 |
 | 落盘路径 | `safeDestinationURL` 防止 `..` 与 Downloads 目录外写入 |

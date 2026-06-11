@@ -122,8 +122,8 @@ private final class UpdateDownloadDelegate: NSObject, URLSessionDownloadDelegate
         }
 
         do {
-            let attributes = try FileManager.default.attributesOfItem(atPath: location.path)
-            if let size = attributes[.size] as? Int64, size > TrustedDownloadPolicy.maxDMGBytes {
+            if let size = TrustedDownloadPolicy.fileSize(at: location),
+               size > TrustedDownloadPolicy.maxDMGBytes {
                 try? FileManager.default.removeItem(at: location)
                 finish(.failure(UpdateDownloadError.fileTooLarge))
                 return

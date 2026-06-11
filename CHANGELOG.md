@@ -9,6 +9,12 @@
 
 - （下一版本变更写在这里）
 
+## [1.2.6] - 2026-06-11
+
+### Fixed
+
+- 修复应用内更新下载失败：允许 GitHub CDN（`release-assets.githubusercontent.com`）重定向，并修正 DMG 文件大小编读
+
 ## [1.2.5] - 2026-06-10
 
 ### Added
@@ -101,7 +107,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.5...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.6...HEAD
+[1.2.6]: https://github.com/NicCraver/tic/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/NicCraver/tic/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/NicCraver/tic/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/NicCraver/tic/compare/v1.2.2...v1.2.3
