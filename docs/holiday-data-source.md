@@ -1,20 +1,19 @@
 # 节假日 / 调休数据源方案（多源冗余 + 统一格式）
 
 > 背景：节气、农历节日、公历固定节日都能本地算法计算（永久有效，见 `SolarTermSupport` / `ChineseCalendarSupport`）。
-> **唯一无法算法化的是「法定放假 / 调休」**——它是国务院每年行政公布的政策，无规律可推。本方案用**免费、无 key 的静态 JSON 源**联网获取这一项，并做多源冗余、统一格式、离线兜底。
+> **唯一无法算法化的是「法定放假 / 调休」**——它是国务院每年行政公布的政策，无规律可推。客户端**仅读取 App 内置 JSON**；维护者在国务院公布后从 [holiday-cn](https://github.com/NateScarlet/holiday-cn) 取数、写入 `Resources/holidays/` 并发版。
 
-## 实现状态（2026-06-01，已落地）
+## 实现状态（2026-06-12，已落地）
 
 核心已实现于 [`Tic/Sources/Holiday/HolidayStore.swift`](../Tic/Sources/Holiday/HolidayStore.swift)：
 
-- **打包兜底**：[`Tic/Resources/holidays/{2024,2025,2026}.json`](../Tic/Resources/holidays/)（holiday-cn 原格式裁剪），离线 / 首启即可用。
-- **联网刷新**：启动时（`AppDelegate`）从 holiday-cn 拉取**当年 + 次年**（**固定 commit pin**，非 `@master`），jsDelivr 主、GitHub raw 备；响应 ≤ 2MB、解析后 `year` 须与请求一致；节流 24h；成功写入 `Application Support/Tic/holidays/{year}.json`，下次启动优先于打包数据。
-- **统一格式**：解析为 `DayAnnotation`（`subtitle` = 放假节日名 / 补班为 nil，`badge` = 休/班），`ChineseCalendarSupport` 通过 `HolidayStore.shared.annotation(forKey:)` 查询，零摩擦替换原硬编码字典。
-- **线程安全**：`HolidayStore` 用 `NSLock` 保护内部表，刷新在后台 Task，完成后主线程广播 `.holidayDataDidUpdate`，月历清缓存重建。
-- **隐私开关**：设置「日历」分区新增「自动更新节假日数据」（默认开），关闭则只用打包数据。
-- **农历节日已脱钩**：春节/元宵/端午/七夕/中秋/重阳/腊八/小年/除夕等改为 `ChineseCalendarSupport.lunarFestival` 由 `.chinese` 农历本地推算；节日**倒计时**也改为公历固定 + 农历 + 节气推算，不再依赖调休数据（任意年份有效）。
+- **内置数据**：[`Tic/Resources/holidays/{2024,2025,2026}.json`](../Tic/Resources/holidays/)（holiday-cn 格式），启动时加载，**完全离线**。
+- **统一格式**：解析为 `DayAnnotation`（`subtitle` = 放假节日名 / 补班为 nil，`badge` = 休/班），`ChineseCalendarSupport` 通过 `HolidayStore.shared.annotation(forKey:)` 查询。
+- **线程安全**：`HolidayStore` 用 `NSLock` 保护内部表。
+- **发版更新**：新年份 / 修订国务院安排后，更新 bundle 内 JSON 并 bump 版本；用户通过「检查更新」安装新版。
+- **农历节日已脱钩**：春节/元宵/端午等由 `ChineseCalendarSupport.lunarFestival` 本地推算；节日倒计时不依赖调休 JSON。
 
-**与下文完整方案的差异**：当前仅接入**主源 holiday-cn**（含 jsDelivr + GitHub raw 两个节点）；备源 cg-zhou / lanceliao 暂未接入，留作后续冗余增强。下文为完整设计，按需扩展。
+**与下文完整方案的差异**：下文描述的「联网多源拉取 + Application Support 缓存」方案**已不再实现**；仅保留设计参考。下文为历史设计，按需查阅。
 
 ## 设计原则
 

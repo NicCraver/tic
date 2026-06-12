@@ -89,6 +89,11 @@ final class TicTests: XCTestCase {
         XCTAssertEqual(SolarTermSupport.terms(in: 2030).count, 24)
     }
 
+    func testLunarFestivalWorksInDistantYear() {
+        // 2030 年正月初一由农历推算，不依赖调休 JSON
+        XCTAssertEqual(ChineseCalendarSupport.cellSubtitle(for: gregorianDate(2030, 2, 3)), "春节")
+    }
+
     func testMonthSlotsUseMondayAsFirstColumn() {
         // 2026-01-01 周四 → 周一首列前应空 3 格
         let slots = ChineseCalendarSupport.monthSlots(for: gregorianDate(2026, 1, 1))
@@ -103,38 +108,19 @@ final class TicTests: XCTestCase {
         XCTAssertFalse(oct2.contains("国庆节"))
     }
 
-    // MARK: - 更新下载安全策略
+    // MARK: - 版本比较（检查更新）
 
-    func testTrustedReleaseAssetURLAcceptsOfficialDMG() {
-        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
-        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    func testUpdateServiceComparesSemVer() {
+        let service = UpdateService()
+        XCTAssertTrue(service.isNewer(latest: "1.3.0", current: "1.2.6"))
+        XCTAssertFalse(service.isNewer(latest: "1.2.6", current: "1.2.6"))
+        XCTAssertFalse(service.isNewer(latest: "1.2.5", current: "1.2.6"))
+        XCTAssertTrue(service.isNewer(latest: "1.2.10", current: "1.2.9"))
     }
 
-    func testTrustedReleaseAssetURLRejectsWrongVersion() {
-        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v9.9.9-macOS.dmg")!
-        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
-    }
-
-    func testTrustedReleaseAssetURLRejectsForeignHost() {
-        let url = URL(string: "https://evil.example.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
-        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
-    }
-
-    func testTrustedReleaseAssetURLAcceptsGitHubCDNRedirect() {
-        let url = URL(string: "https://release-assets.githubusercontent.com/github-production-release-asset/1252199363/abc?response-content-disposition=attachment%3B%20filename%3DTic-v1.2.5-macOS.dmg")!
-        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.5"))
-    }
-
-    func testFileSizeReadsNSNumberAttribute() throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("tic-size-test.bin")
-        defer { try? FileManager.default.removeItem(at: url) }
-        try Data(repeating: 0xAB, count: 42).write(to: url)
-        XCTAssertEqual(TrustedDownloadPolicy.fileSize(at: url), 42)
-    }
-
-    func testSafeDestinationURLRejectsPathTraversal() {
-        let downloads = FileManager.default.temporaryDirectory
-        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "../Tic-v1.0.0-macOS.dmg", in: downloads))
-        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "foo/bar.dmg", in: downloads))
+    func testUpdateServiceStripsVersionPrefix() {
+        let service = UpdateService()
+        XCTAssertEqual(service.stripVersionPrefix("v1.2.4"), "1.2.4")
+        XCTAssertEqual(service.stripVersionPrefix("1.2.4"), "1.2.4")
     }
 }

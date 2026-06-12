@@ -7,7 +7,19 @@
 
 ### Added
 
-- （下一版本变更写在这里）
+- `CONTRIBUTING.md`、`SECURITY.md`、Issue / PR 模板
+- `docs/images/` 截图目录占位
+
+### Changed
+
+- README 面向用户重写：功能亮点、隐私、已知限制、快捷键表；截图占位保留
+- **离线优先**：移除节假日联网刷新与应用内 DMG 下载；调休数据仅读 App 内置 JSON，随发版更新
+- **检查更新**：改为查询 GitHub Releases 后在浏览器下载（不再应用内下载）；每天本地 10:00 自动检查并弹窗提醒，启动时补检；点「稍后」则同一版本不再重复提醒
+
+### Removed
+
+- 设置「自动更新节假日数据」开关
+- `UpdateAvailableView`、`UpdateDownloadManager`、`TrustedDownloadPolicy` 及应用内下载安全策略
 
 ## [1.2.6] - 2026-06-11
 

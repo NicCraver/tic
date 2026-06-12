@@ -17,7 +17,7 @@ final class AboutSettingsViewController: SettingsPaneViewController {
             SettingsGroup(rows: [
                 SettingsActionRow(
                     title: "检查更新",
-                    subtitle: "查询 GitHub 最新版本",
+                    subtitle: "查询 GitHub 是否有新版本，并在浏览器中打开下载页",
                     action: { UpdateChecker.shared.checkManually() }
                 ),
                 SettingsLinkRow(

@@ -45,7 +45,7 @@ enum ChineseCalendarSupport {
     ]
     private static let digitNames = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 
-    // 法定节假日 / 调休（休/班）来自 `HolidayStore`（打包 JSON + 联网刷新），不再内置硬编码表。
+    // 法定节假日 / 调休（休/班）来自 `HolidayStore` 内置打包 JSON，不再内置硬编码表。
 
 
     private static let solarFestivalTemplates: [(month: Int, day: Int, cellTitle: String, eventTitle: String)] = [

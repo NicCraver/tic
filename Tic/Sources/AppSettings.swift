@@ -69,7 +69,6 @@ enum AppSettings {
     static let menuBarEnabledBlocksKey = "menuBarEnabledBlocks"
     static let showAnnotationDotsKey = "showAnnotationDots"
     static let showSolarTermsKey = "showSolarTerms"
-    static let autoUpdateHolidaysKey = "autoUpdateHolidays"
     static let launchAtLoginKey = "launchAtLogin"
     static let legacyDateFormatStyleKey = "dateFormatStyle"
 

@@ -6,7 +6,6 @@ struct GitHubRelease: Sendable {
     let name: String
     let body: String
     let htmlURL: URL
-    let dmgDownloadURL: URL?
     let publishedAt: Date?
 }
 
@@ -16,7 +15,6 @@ enum UpdateError: LocalizedError, Sendable {
     case rateLimited
     case apiError(statusCode: Int)
     case parseError
-    case untrustedDownloadURL
     case responseTooLarge
 
     var errorDescription: String? {
@@ -31,23 +29,26 @@ enum UpdateError: LocalizedError, Sendable {
             return "服务器返回错误（\(code)）"
         case .parseError:
             return "无法解析更新信息"
-        case .untrustedDownloadURL:
-            return "更新包地址未通过安全校验"
         case .responseTooLarge:
             return "服务器响应过大"
         }
     }
 }
 
-/// 通过 GitHub Releases API 检查新版本。
+/// 通过 GitHub Releases API 查询是否有新版本（仅版本比对，不下载安装包）。
 final class UpdateService: Sendable {
     private static let owner = "NicCraver"
     private static let repo = "tic"
     private static let releasesURL =
         "https://api.github.com/repos/\(owner)/\(repo)/releases/latest"
+    private static let maxAPIResponseBytes = 512 * 1024
 
     static var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    }
+
+    static var releasesPageURL: URL {
+        URL(string: "https://github.com/\(owner)/\(repo)/releases")!
     }
 
     private let logger = Logger(subsystem: "me.nic.tic", category: "UpdateService")
@@ -87,10 +88,7 @@ final class UpdateService: Sendable {
         let contentLength = httpResponse.expectedContentLength > 0
             ? Int(httpResponse.expectedContentLength)
             : nil
-        guard HTTPBodySizeLimit.isWithinLimit(
-            contentLength: contentLength,
-            maxBytes: HTTPBodySizeLimit.githubAPIBytes
-        ), HTTPBodySizeLimit.isWithinLimit(data: data, maxBytes: HTTPBodySizeLimit.githubAPIBytes) else {
+        guard isWithinLimit(contentLength: contentLength, data: data) else {
             throw UpdateError.responseTooLarge
         }
 
@@ -99,13 +97,13 @@ final class UpdateService: Sendable {
         guard isNewer(latest: latestVersion, current: Self.currentVersion) else {
             return nil
         }
-        guard let dmgURL = release.dmgDownloadURL,
-              TrustedDownloadPolicy.isTrustedReleaseAssetURL(dmgURL, expectedVersion: latestVersion)
-        else {
-            logger.error("Release DMG URL 未通过安全校验")
-            throw UpdateError.untrustedDownloadURL
-        }
         return release
+    }
+
+    private func isWithinLimit(contentLength: Int?, data: Data) -> Bool {
+        guard data.count <= Self.maxAPIResponseBytes else { return false }
+        guard let contentLength else { return true }
+        return contentLength <= Self.maxAPIResponseBytes
     }
 
     private func parseRelease(data: Data) throws -> GitHubRelease {
@@ -119,20 +117,6 @@ final class UpdateService: Sendable {
 
         let name = json["name"] as? String ?? tagName
         let body = json["body"] as? String ?? ""
-        let version = stripVersionPrefix(tagName)
-        var dmgDownloadURL: URL?
-        if let assets = json["assets"] as? [[String: Any]] {
-            for asset in assets {
-                guard let assetName = asset["name"] as? String,
-                      TrustedDownloadPolicy.isExpectedDMGFilename(assetName, version: version),
-                      let urlString = asset["browser_download_url"] as? String,
-                      let url = URL(string: urlString),
-                      TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: version)
-                else { continue }
-                dmgDownloadURL = url
-                break
-            }
-        }
 
         var publishedAt: Date?
         if let dateString = json["published_at"] as? String {
@@ -147,7 +131,6 @@ final class UpdateService: Sendable {
             name: name,
             body: body,
             htmlURL: htmlURL,
-            dmgDownloadURL: dmgDownloadURL,
             publishedAt: publishedAt
         )
     }
