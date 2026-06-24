@@ -27,6 +27,8 @@ jobs:
             -destination 'platform=macOS' \
             -configuration Release \
             -derivedDataPath build/DerivedData \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY=-
 
@@ -34,6 +36,11 @@ jobs:
         run: |
           APP_PATH="build/DerivedData/Build/Products/Release/Tic.app"
           test -d "$APP_PATH"
+          # 校验为 Universal（arm64 + x86_64），防止意外回退成单架构分发
+          ARCHS_OUT=$(lipo -archs "$APP_PATH/Contents/MacOS/Tic")
+          echo "Binary archs: $ARCHS_OUT"
+          echo "$ARCHS_OUT" | grep -q arm64
+          echo "$ARCHS_OUT" | grep -q x86_64
           # 整包 ad-hoc 签名，减轻 Gatekeeper 对「已损坏」的误报（仍需用户处理隔离属性）
           codesign --sign - --force --deep --timestamp=none "$APP_PATH"
           codesign --verify --deep --strict "$APP_PATH"

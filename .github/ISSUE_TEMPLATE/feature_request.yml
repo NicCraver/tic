@@ -1,0 +1,33 @@
+name: 功能建议
+description: 提出新功能或体验改进想法
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先搜索 [已有 Issue](https://github.com/NicCraver/tic/issues)，避免重复建议。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题？
+      description: 使用场景、痛点，而非直接说实现方案
+      placeholder: 例如：上班前想一眼看到离下次放假还有几天…
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望的行为或界面
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 其他 App、脚本、或 Tic 现有设置能否部分满足
+    validations:
+      required: false

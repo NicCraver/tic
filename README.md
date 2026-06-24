@@ -7,10 +7,14 @@
 
 开源的 macOS 菜单栏日历：状态栏显示日期/农历/时间，点击弹出月历，一眼看清节气、法定节假日与调休。
 
-<!-- 截图占位：补充后取消注释
-![菜单栏](docs/images/menu-bar.png)
-![日历弹窗](docs/images/calendar-popover.png)
--->
+<p align="center">
+  <img src="docs/images/menu-bar.png" alt="菜单栏标签" width="420"><br>
+  <img src="docs/images/calendar-popover.png" alt="日历弹窗" width="300">
+  &nbsp;
+  <img src="docs/images/settings.png" alt="设置窗口" width="300">
+</p>
+
+<sub>截图拍摄规格与命名见 <a href="docs/images/README.md"><code>docs/images/README.md</code></a>。</sub>
 
 ## 功能
 
@@ -23,7 +27,7 @@
 
 ## 下载
 
-[Releases](https://github.com/NicCraver/tic/releases) 提供 `.dmg`（**Apple Silicon / arm64**，macOS 14+）。打开镜像后将 **Tic** 拖入 **Applications** 即可。
+[Releases](https://github.com/NicCraver/tic/releases) 提供 `.dmg`（**Universal：Apple Silicon 与 Intel**，macOS 14+）。打开镜像后将 **Tic** 拖入 **Applications** 即可。
 
 > **首次打开提示「已损坏」或无法验证开发者？** 这是 Gatekeeper 拦截未公证应用，并非文件损坏。任选其一：
 >
@@ -34,8 +38,6 @@
 >    xattr -cr /Applications/Tic.app
 >    open /Applications/Tic.app
 >    ```
->
-> Intel Mac 请 [从源码构建](#从源码构建)。
 
 ## 快捷键（日历弹窗内）
 
@@ -57,7 +59,6 @@
 
 ## 已知限制
 
-- 预编译 Release 为 **arm64**，Intel 需自行编译
 - 当前 Release **未 Apple 公证**，首次打开需按上文处理 Gatekeeper
 - 内置调休数据覆盖 **2024–2026**；2027 年及以后需等待新版本发版（国务院公布后维护者更新内置 JSON）
 - **全局快捷键**（任意界面唤起日历）计划在后续版本提供

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 讨论与提问
+    url: https://github.com/NicCraver/tic/issues/new/choose
+    about: 不确定是 Bug 还是建议？可先发 Issue 说明场景，维护者会归类。

@@ -29,6 +29,10 @@ final class CalendarSettingsViewController: SettingsPaneViewController {
         return [makeSettingsGroupedCard([dotsRow, termsRow])]
     }
 
+    override func makeFooter() -> NSView? {
+        makeSettingsFootnote("法定节假日 / 调休数据已内置至 \(HolidayStore.shared.maxCoveredYear) 年，新年份随版本更新。")
+    }
+
     @objc private func dotsChanged() {
         AppSettings.setBool(dotsSwitch.state == .on, forKey: AppSettings.showAnnotationDotsKey)
     }

@@ -1,0 +1,56 @@
+name: Holiday Data Check
+
+# 离线优先：客户端不联网刷新调休数据，新年份随版本内置发版。
+# 此哨兵仅在「上游已发布次年数据、而仓库尚未内置」时开 Issue 提醒维护者，消除「忘记发版」风险。
+
+on:
+  schedule:
+    - cron: "0 1 * * 1" # 每周一 01:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe-next-year:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe upstream holiday-cn for next year
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEXT=$(( $(date -u +%Y) + 1 ))
+          if [ -f "Tic/Resources/holidays/$NEXT.json" ]; then
+            echo "已内置 $NEXT 年数据，无需提醒。"
+            exit 0
+          fi
+
+          URL="https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/$NEXT.json"
+          if ! curl -fsSL "$URL" -o "/tmp/$NEXT.json"; then
+            echo "上游尚未发布 $NEXT 年数据，稍后再试。"
+            exit 0
+          fi
+
+          # 轻量校验：响应确实包含该年份字段，避免误报
+          if ! grep -q "\"year\":[[:space:]]*$NEXT" "/tmp/$NEXT.json"; then
+            echo "上游 $NEXT.json 内容异常（未含 year=$NEXT），跳过。"
+            exit 0
+          fi
+
+          TITLE="内置 $NEXT 年法定节假日 / 调休数据"
+          OPEN_COUNT=$(gh issue list --state open --search "$TITLE in:title" --json number --jq 'length')
+          if [ "$OPEN_COUNT" != "0" ]; then
+            echo "已存在同名 open issue，跳过创建。"
+            exit 0
+          fi
+
+          gh issue create \
+            --title "$TITLE" \
+            --body "上游 [holiday-cn]($URL) 已发布 **$NEXT 年** 放假安排，但仓库 \`Tic/Resources/holidays/\` 尚未内置。
+
+          请取数写入 \`Tic/Resources/holidays/$NEXT.json\`（holiday-cn 格式）并 bump 版本发版。
+
+          > 离线优先：客户端不联网刷新，新年份依赖发版分发。本 Issue 由 \`holiday-data-check.yml\` 自动创建。"

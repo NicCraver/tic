@@ -1,0 +1,70 @@
+name: Bug 报告
+description: 报告异常行为、崩溃或显示错误
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认使用 [最新 Release](https://github.com/NicCraver/tic/releases)。
+        若为「已损坏，无法打开」，请先阅读 [README 安装说明](https://github.com/NicCraver/tic#下载)。
+
+  - type: input
+    id: version
+    attributes:
+      label: Tic 版本
+      description: 设置 → 关于，或 Release 标签名（如 1.2.6）
+      placeholder: "1.2.6"
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 版本
+      placeholder: "15.5 (arm64)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: 安装方式
+      options:
+        - Releases DMG（预编译）
+        - 从源码自行编译
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开日历弹窗
+        2. 切换到 2026 年 2 月
+        3. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 截图、Console 日志、是否与「自动更新节假日数据」或深色模式相关等
+    validations:
+      required: false

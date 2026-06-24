@@ -5,14 +5,21 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-24
+
 ### Added
 
 - `CONTRIBUTING.md`、`SECURITY.md`、Issue / PR 模板
-- `docs/images/` 截图目录占位
+- `docs/images/` 截图目录占位与拍摄清单（README 截图引用就位）
+- 日历弹窗与设置页提示「当前查看年份缺少内置法定调休数据」（如翻到 2027 年时）
+- CI 节假日数据哨兵 `holiday-data-check.yml`：上游已发布次年数据而仓库未内置时自动开 Issue 提醒
+- 单元测试覆盖 `UpdateService`（解析 / 限流）、`MenuBarDisplayComposer`（文案拼装）与 `HolidayStore`（覆盖年份）
 
 ### Changed
 
-- README 面向用户重写：功能亮点、隐私、已知限制、快捷键表；截图占位保留
+- 预编译 Release 改为 **Universal**（Apple Silicon + Intel）；CI 显式构建双架构并以 `lipo` 校验
+- 清理 `project.yml` 无效的 `ONLY_ACTIVE_ARCH_Release`，改用合法的 `configs.Release.ONLY_ACTIVE_ARCH`
+- README 面向用户重写：功能亮点、隐私、已知限制、快捷键表；截图引用就位
 - **离线优先**：移除节假日联网刷新与应用内 DMG 下载；调休数据仅读 App 内置 JSON，随发版更新
 - **检查更新**：改为查询 GitHub Releases 后在浏览器下载（不再应用内下载）；每天本地 10:00 自动检查并弹窗提醒，启动时补检；点「稍后」则同一版本不再重复提醒
 

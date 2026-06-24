@@ -12,6 +12,7 @@ final class HolidayStore: @unchecked Sendable {
 
     private let lock = NSLock()
     private var byKey: [String: DayAnnotation] = [:]
+    private var coveredYearSet: Set<Int> = []
 
     private init() {
         loadBundled()
@@ -21,6 +22,18 @@ final class HolidayStore: @unchecked Sendable {
     func annotation(forKey key: String) -> DayAnnotation? {
         lock.lock(); defer { lock.unlock() }
         return byKey[key]
+    }
+
+    /// 内置数据覆盖的最大年份；无任何数据时为 0。
+    var maxCoveredYear: Int {
+        lock.lock(); defer { lock.unlock() }
+        return coveredYearSet.max() ?? 0
+    }
+
+    /// 某年是否缺少内置调休数据（用于 UI 非阻断提示）；无任何数据时不提示，避免误报。
+    func isYearUncovered(_ year: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return !coveredYearSet.isEmpty && !coveredYearSet.contains(year)
     }
 
     // MARK: - 解析（holiday-cn 格式）
@@ -65,6 +78,7 @@ final class HolidayStore: @unchecked Sendable {
                   !parsed.days.isEmpty
             else { continue }
             apply(days: parsed.days)
+            coveredYearSet.insert(year)
         }
     }
 

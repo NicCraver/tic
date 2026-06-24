@@ -100,13 +100,15 @@ final class UpdateService: Sendable {
         return release
     }
 
-    private func isWithinLimit(contentLength: Int?, data: Data) -> Bool {
+    /// 校验响应体积是否在上限内。`internal` 以便单元测试。
+    func isWithinLimit(contentLength: Int?, data: Data) -> Bool {
         guard data.count <= Self.maxAPIResponseBytes else { return false }
         guard let contentLength else { return true }
         return contentLength <= Self.maxAPIResponseBytes
     }
 
-    private func parseRelease(data: Data) throws -> GitHubRelease {
+    /// 解析 GitHub Releases API 响应。`internal` 以便单元测试。
+    func parseRelease(data: Data) throws -> GitHubRelease {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tagName = json["tag_name"] as? String,
               let htmlURLString = json["html_url"] as? String,

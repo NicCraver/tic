@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic 产品状态评估与优化方案</title>
+<style>
+  :root{
+    --bg:#0b0b0d; --surface:#151519; --surface-2:#1d1d23; --surface-3:#24242c;
+    --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+    --text:#ececf1; --muted:#9a9aa6; --faint:#6b6b76;
+    --accent:#0a84ff; --green:#30d158; --amber:#ffd60a; --red:#ff453a; --orange:#ff9f0a; --purple:#bf5af2;
+    --radius:16px; --radius-sm:11px;
+    --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;
+    font-size:15px;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(900px 500px at 85% -8%,rgba(10,132,255,.12),transparent 60%),
+                     radial-gradient(700px 400px at 0% 0%,rgba(191,90,242,.08),transparent 55%);
+    background-attachment:fixed;}
+  .wrap{max-width:1040px;margin:0 auto;padding:56px 26px 96px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.87em;background:var(--surface-3);
+    padding:.12em .42em;border-radius:6px;color:#e6e6ee}
+  h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+    margin:60px 0 20px;font-weight:600;display:flex;align-items:center;gap:10px}
+  h2::before{content:"";width:18px;height:2px;background:var(--accent);border-radius:2px}
+  h3{font-size:18px;font-weight:650;margin-bottom:6px;letter-spacing:.01em}
+
+  /* ---------- header ---------- */
+  header{margin-bottom:8px}
+  .eyebrow{font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:14px}
+  h1{font-size:40px;line-height:1.12;font-weight:720;letter-spacing:-.02em;
+    background:linear-gradient(110deg,#fff 20%,#9ec5ff 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:15px;margin-top:14px;max-width:680px}
+  .meta-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+  .chip{font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--border);
+    padding:6px 13px;border-radius:999px;display:inline-flex;align-items:center;gap:7px}
+  .chip b{color:var(--text);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+  /* ---------- hero score ---------- */
+  .hero{display:grid;grid-template-columns:auto 1fr;gap:36px;align-items:center;
+    background:linear-gradient(160deg,var(--surface) 0%,rgba(21,21,25,.4) 100%);
+    border:1px solid var(--border);border-radius:24px;padding:34px 38px;margin-top:38px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;inset:0;border-radius:24px;padding:1px;
+    background:linear-gradient(140deg,rgba(10,132,255,.5),transparent 40%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .ring-wrap{position:relative;width:150px;height:150px}
+  .ring-wrap .label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-wrap .num{font-size:42px;font-weight:730;letter-spacing:-.02em;line-height:1}
+  .ring-wrap .den{font-size:14px;color:var(--muted);margin-top:3px}
+  .hero-body .grade{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;
+    color:var(--green);background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.3);
+    padding:5px 13px;border-radius:999px;margin-bottom:14px}
+  .hero-body .verdict{font-size:19px;font-weight:600;line-height:1.5;letter-spacing:-.01em}
+  .hero-body .verdict .hl{color:var(--accent)}
+  .hero-body p{color:var(--muted);margin-top:12px;font-size:14px}
+
+  /* ---------- snapshot cards ---------- */
+  .grid{display:grid;gap:14px}
+  .snap{grid-template-columns:repeat(4,1fr)}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 16px;transition:.18s}
+  .stat:hover{border-color:var(--border-strong);transform:translateY(-2px)}
+  .stat .k{font-size:12px;color:var(--faint);letter-spacing:.04em;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .stat .v{font-size:25px;font-weight:680;letter-spacing:-.01em;line-height:1.1}
+  .stat .v small{font-size:13px;color:var(--muted);font-weight:500}
+  .stat .note{font-size:12px;color:var(--muted);margin-top:6px}
+
+  /* ---------- radar + bars ---------- */
+  .scorecard{display:grid;grid-template-columns:340px 1fr;gap:30px;align-items:center;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px}
+  .bars{display:flex;flex-direction:column;gap:14px}
+  .bar-row{display:grid;grid-template-columns:104px 1fr 42px;align-items:center;gap:14px}
+  .bar-row .bk{font-size:13.5px;color:var(--text);font-weight:500}
+  .bar-track{height:9px;background:var(--surface-3);border-radius:999px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:999px;width:0;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+  .bar-row .bv{font-size:13.5px;font-weight:650;text-align:right;font-variant-numeric:tabular-nums}
+
+  /* ---------- dimension detail ---------- */
+  .dims{grid-template-columns:repeat(2,1fr)}
+  .dim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative}
+  .dim .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .dim .score{font-size:21px;font-weight:720;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+  .dim .score small{font-size:12px;color:var(--faint);font-weight:500}
+  .dim p{font-size:13.5px;color:var(--muted)}
+  .dim .tag{position:absolute;top:18px;right:0}
+  .pill{font-size:11px;font-weight:650;letter-spacing:.03em;padding:3px 9px;border-radius:999px}
+  .p-strong{color:var(--green);background:rgba(48,209,88,.13)}
+  .p-ok{color:var(--accent);background:rgba(10,132,255,.13)}
+  .p-warn{color:var(--amber);background:rgba(255,214,10,.13)}
+  .p-risk{color:var(--red);background:rgba(255,69,58,.13)}
+
+  /* ---------- swot ---------- */
+  .swot{grid-template-columns:1fr 1fr}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px}
+  .panel .pt{font-size:14px;font-weight:650;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .panel ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .panel li{font-size:13.5px;color:var(--muted);padding-left:22px;position:relative;line-height:1.55}
+  .panel li b{color:var(--text);font-weight:600}
+  .panel li::before{position:absolute;left:0;top:1px;font-size:13px}
+  .good li::before{content:"▲";color:var(--green)}
+  .bad li::before{content:"▼";color:var(--red)}
+
+  /* ---------- solutions ---------- */
+  .sol{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px 26px;margin-bottom:16px;position:relative;overflow:hidden}
+  .sol::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+  .sol.p0::before{background:var(--red)} .sol.p1::before{background:var(--orange)} .sol.p2::before{background:var(--accent)}
+  .sol .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+  .sol .idx{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .sol h3{margin:0}
+  .prio{font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:6px}
+  .prio.p0{color:#fff;background:var(--red)} .prio.p1{color:#1a1a00;background:var(--orange)} .prio.p2{color:#fff;background:var(--accent)}
+  .sol .why{font-size:13.5px;color:var(--muted);margin:10px 0 16px;padding:11px 14px;
+    background:rgba(255,69,58,.07);border-left:2px solid rgba(255,69,58,.4);border-radius:0 8px 8px 0}
+  .sol .why.neutral{background:rgba(255,159,10,.07);border-color:rgba(255,159,10,.4)}
+  .sol .why b{color:var(--text)}
+  .sol .fix{font-size:13.5px;color:var(--text);margin-bottom:14px}
+  .sol .fix b{color:var(--green)}
+  .metrics{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .metric{font-size:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
+  .metric .ml{color:var(--faint);margin-right:6px}
+  .metric .mv{color:var(--text);font-weight:600}
+  pre{background:#0d0d11;border:1px solid var(--border);border-radius:10px;padding:15px 17px;
+    overflow-x:auto;margin:8px 0 4px;font-size:12.5px;line-height:1.6}
+  pre code{background:none;padding:0;color:#d4d4dc;font-size:inherit}
+  .cmt{color:#6b8a5a} .kw{color:#c586c0} .str{color:#8dd6a0} .key2{color:#79b8ff} .fn{color:#dcdcaa}
+  details{margin-top:6px}
+  summary{cursor:pointer;font-size:12.5px;color:var(--accent);list-style:none;user-select:none;padding:4px 0}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";font-size:10px}
+  details[open] summary::before{content:"▾ "}
+
+  /* ---------- matrix ---------- */
+  .matrix{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px;position:relative}
+  .mgrid{display:grid;grid-template-columns:32px 1fr 1fr;grid-template-rows:1fr 1fr 30px}
+  .axis-y{grid-row:1/3;grid-column:1;writing-mode:vertical-rl;transform:rotate(180deg);
+    text-align:center;font-size:11px;color:var(--faint);letter-spacing:.1em;padding:12px 0}
+  .axis-x{grid-column:2/4;grid-row:3;text-align:center;font-size:11px;color:var(--faint);letter-spacing:.1em}
+  .quad{border:1px dashed var(--border);margin:5px;border-radius:12px;padding:14px;min-height:150px;position:relative}
+  .quad .qt{font-size:11px;font-weight:700;letter-spacing:.05em;margin-bottom:11px;text-transform:uppercase}
+  .quad.win .qt{color:var(--green)} .quad.invest .qt{color:var(--orange)}
+  .quad.fill .qt{color:var(--accent)} .quad.later .qt{color:var(--faint)}
+  .item{font-size:12.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:6px 11px;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .item .mini{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px}
+
+  /* ---------- roadmap ---------- */
+  .timeline{position:relative;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(var(--green),var(--orange),var(--accent))}
+  .phase{position:relative;margin-bottom:26px}
+  .phase::before{content:"";position:absolute;left:-30px;top:4px;width:16px;height:16px;border-radius:50%;
+    border:3px solid var(--bg);box-shadow:0 0 0 2px currentColor}
+  .phase.now{color:var(--green)} .phase.mid{color:var(--orange)} .phase.next{color:var(--accent)}
+  .phase .ptitle{font-size:15px;font-weight:650;color:var(--text)}
+  .phase .pwhen{font-size:12px;color:currentColor;font-weight:600;letter-spacing:.04em;margin-bottom:8px;display:block}
+  .phase ul{list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .phase li{font-size:13.5px;color:var(--muted);padding-left:18px;position:relative}
+  .phase li::before{content:"○";position:absolute;left:0;color:var(--faint);font-size:11px;top:2px}
+
+  footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--border);
+    color:var(--faint);font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+  @media(max-width:780px){
+    h1{font-size:30px}
+    .hero{grid-template-columns:1fr;text-align:center;justify-items:center;gap:20px}
+    .scorecard{grid-template-columns:1fr}
+    .snap,.dims,.swot{grid-template-columns:1fr}
+    .bar-row{grid-template-columns:90px 1fr 38px}
+    .mgrid{grid-template-columns:24px 1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HEADER ============ -->
+  <header>
+    <div class="eyebrow">产品状态评估报告</div>
+    <h1>Tic 产品体检与优化方案</h1>
+    <p class="sub">开源 macOS 菜单栏日历 · 基于代码静态分析、Git 历史、CI 配置、文档审阅与一次完整测试运行（19/19 通过）综合评定。</p>
+    <div class="meta-row">
+      <span class="chip"><span class="dot" style="background:var(--green)"></span>评估日期 <b>2026-06-13</b></span>
+      <span class="chip">版本 <b>v1.2.6</b> (build 10)</span>
+      <span class="chip">提交 <b>28</b> · 历时约 <b>2 周</b></span>
+      <span class="chip">代码 <b>4,628</b> 行 / 44 文件</span>
+      <span class="chip">测试 <b>19/19</b> 通过</span>
+    </div>
+  </header>
+
+  <!-- ============ HERO SCORE ============ -->
+  <div class="hero">
+    <div class="ring-wrap">
+      <svg width="150" height="150" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="11"/>
+        <circle id="scoreRing" cx="75" cy="75" r="62" fill="none" stroke="url(#g1)" stroke-width="11"
+                stroke-linecap="round" transform="rotate(-90 75 75)"/>
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0a84ff"/><stop offset="1" stop-color="#5ac8fa"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="label"><div class="num">7.5</div><div class="den">/ 10</div></div>
+    </div>
+    <div class="hero-body">
+      <span class="grade">综合评级 · B+（良好偏优）</span>
+      <div class="verdict">一个<span class="hl">功能完整、工程规范、技术执行质量很高</span>的个人开源项目，已处于「可用且活跃迭代」阶段。</div>
+      <p>距离「大众零摩擦使用的发布级成品」只差最后一步——<b style="color:var(--text)">分发成熟度</b>（Apple 公证、Intel 支持、营销物料）与<b style="color:var(--text)">数据长期可持续性</b>。技术面已是 8.5+ 水准，被拉到 7.5 的正是这两块「面向终端用户的交付」短板。</p>
+    </div>
+  </div>
+
+  <!-- ============ SNAPSHOT ============ -->
+  <h2>客观快照</h2>
+  <div class="grid snap">
+    <div class="stat"><div class="k">迭代节奏</div><div class="v">28 <small>commits</small></div><div class="note">v1.0.0 → 今约 2 周，节奏紧凑</div></div>
+    <div class="stat"><div class="k">代码规模</div><div class="v">4,628 <small>行</small></div><div class="note">44 文件，最大单文件 624 行</div></div>
+    <div class="stat"><div class="k">测试 & CI</div><div class="v" style="color:var(--green)">19/19 ✓</div><div class="note">CI：build + test + release 自动化</div></div>
+    <div class="stat"><div class="k">分发形态</div><div class="v" style="color:var(--amber)">arm64</div><div class="note">DMG · ad-hoc 签名 · 未公证</div></div>
+    <div class="stat"><div class="k">文档体系</div><div class="v">9 <small>篇</small></div><div class="note">README/CHANGELOG/CONTRIBUTING/SECURITY + 踩坑文档</div></div>
+    <div class="stat"><div class="k">节假日数据</div><div class="v" style="color:var(--amber)">2024–26</div><div class="note">内置 JSON，离线优先，随发版更新</div></div>
+    <div class="stat"><div class="k">隐私姿态</div><div class="v" style="color:var(--green)">离线</div><div class="note">无埋点 / 无账号，仅检查更新联网</div></div>
+    <div class="stat"><div class="k">技术栈</div><div class="v">Swift 6</div><div class="note">SwiftUI + AppKit · XcodeGen · macOS 14+</div></div>
+  </div>
+
+  <!-- ============ SCORECARD ============ -->
+  <h2>能力评分 · 七维</h2>
+  <div class="scorecard">
+    <svg id="radar" width="300" height="300" viewBox="0 0 300 300" style="justify-self:center"></svg>
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <!-- ============ DIMENSION DETAIL ============ -->
+  <h2>维度详评</h2>
+  <div class="grid dims">
+    <div class="dim"><span class="tag"><span class="pill p-strong">强项</span></span>
+      <div class="head"><h3>功能完整度</h3><div class="score">8.5<small>/10</small></div></div>
+      <p>对照 <code>plan.md</code>，核心能力（菜单栏模块化、农历弹窗、节气、调休、6 分区设置、检查更新、登录启动）全部落地；缺口是全局快捷键 K1、强调色 A2 等增强项，均已标 P2+。</p></div>
+
+    <div class="dim"><span class="tag"><span class="pill p-strong">强项</span></span>
+      <div class="head"><h3>代码与架构</h3><div class="score">8.5<small>/10</small></div></div>
+      <p>职责分层清晰（Composer / Label / Store / Support），单一配置源（XcodeGen），Swift 6 严格并发；文件粒度合理，无巨石文件，最大 624 行恰为农历核心。</p></div>
+
+    <div class="dim"><span class="tag"><span class="pill p-strong">亮点</span></span>
+      <div class="head"><h3>文档质量</h3><div class="score">9.0<small>/10</small></div></div>
+      <p>罕见地完善——CHANGELOG 遵循 Keep a Changelog，踩坑经验沉淀成 <code>docs/*.md</code>，Issue / PR 模板齐备。唯一硬伤：README 截图仍是占位。</p></div>
+
+    <div class="dim"><span class="tag"><span class="pill p-ok">合格</span></span>
+      <div class="head"><h3>测试与 CI</h3><div class="score">7.0<small>/10</small></div></div>
+      <p>CI 三段式完整，核心逻辑（农历 / 节气 / 调休 / 版本比较）覆盖到位，19 个测试 0.03s 全绿。但<b style="color:var(--text)">仅覆盖逻辑层</b>，UI / 设置 / 更新流程零自动化测试。</p></div>
+
+    <div class="dim"><span class="tag"><span class="pill p-strong">亮点</span></span>
+      <div class="head"><h3>隐私与安全</h3><div class="score">9.0<small>/10</small></div></div>
+      <p>离线优先、无埋点、无账号；有 SECURITY.md；更新下载链路历经安全加固（域名白名单、大小 / 重定向校验）。隐私姿态在同类应用中属上乘。</p></div>
+
+    <div class="dim"><span class="tag"><span class="pill p-risk">短板</span></span>
+      <div class="head"><h3>分发成熟度</h3><div class="score" style="color:var(--red)">5.0<small>/10</small></div></div>
+      <p><b style="color:var(--text)">影响最大的一环</b>：未 Apple 公证 → 新用户首次打开撞「已损坏」；仅 arm64，Intel 用户须自行编译。摩擦直接挡在转化漏斗最前端。</p></div>
+
+    <div class="dim" style="grid-column:1/-1"><span class="tag"><span class="pill p-warn">隐患</span></span>
+      <div class="head"><h3>数据可持续性</h3><div class="score" style="color:var(--amber)">6.0<small>/10</small></div></div>
+      <p>农历 / 节气是<b style="color:var(--text)">永久有效</b>的天文算法；但法定调休硬编码 <code>2024–2026</code>，离线优先重构后移除了联网刷新——2027 年起若忘记发版，用户看到的将是「无任何节假日标注」却<b style="color:var(--text)">没有任何提示</b>，属典型静默失效风险。</p></div>
+  </div>
+
+  <!-- ============ SWOT ============ -->
+  <h2>优势 vs 短板</h2>
+  <div class="grid swot">
+    <div class="panel good">
+      <div class="pt" style="color:var(--green)">▲ 核心优势</div>
+      <ul>
+        <li><b>工程规范度超出项目年龄</b>：2 周个人项目却具备完整 CI/CD、规范 CHANGELOG、踩坑文档体系。</li>
+        <li><b>架构干净可演进</b>：数据层（HolidayStore / Support）与视图层解耦，重构成本低。</li>
+        <li><b>隐私即卖点</b>：完全离线、无埋点，对注重隐私的目标用户极具吸引力。</li>
+        <li><b>定位清晰克制</b>：明确「不做 EventKit、不做商业化」，避免范围蔓延。</li>
+      </ul>
+    </div>
+    <div class="panel bad">
+      <div class="pt" style="color:var(--red)">▼ 关键短板</div>
+      <ul>
+        <li><b>未公证</b>：劝退最严重的单点，所有新用户第一步即受阻。</li>
+        <li><b>仅 arm64</b>：直接放弃 Intel Mac 存量用户。</li>
+        <li><b>数据会静默过期</b>：2027+ 调休缺失且无应用内提示。</li>
+        <li><b>首屏空白</b>：README 无截图，开源转化率受损。</li>
+        <li><b>测试盲区</b>：UI / 更新流程无回归保护（更新功能曾连发多个测试版本调试）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ SOLUTIONS ============ -->
+  <h2>优化方案 · 可直接落地</h2>
+
+  <!-- S1 公证 -->
+  <div class="sol p0">
+    <div class="top"><span class="idx">01</span><h3>接入 Apple 公证（Notarization）</h3><span class="prio p0">P0 · 最高</span></div>
+    <div class="why"><b>问题：</b><code>release.yml</code> 仅做 ad-hoc <code>codesign --sign -</code>，<code>DEVELOPMENT_TEAM</code> 为空。结果是每个新用户首次打开都撞 Gatekeeper「已损坏」，需手动 <code>xattr -cr</code>——这是整条转化漏斗最前端、流失最严重的一环。</div>
+    <div class="fix"><b>方案：</b>升级为 <b>Developer ID 签名 + Hardened Runtime + notarytool 公证 + stapler 装订</b>。项目已设 <code>ENABLE_HARDENED_RUNTIME: YES</code>，前置条件已具备，只差证书与 CI 步骤。落地后可直接删掉 README 那段 Gatekeeper 说明。</div>
+    <details>
+      <summary>关键 CI 步骤（替换现有 “Ad-hoc sign” 步骤）</summary>
+<pre><code><span class="cmt"># GitHub Secrets: DEVELOPER_ID_P12(base64)·P12_PASSWORD·AC_KEY_P8(base64)·AC_KEY_ID·AC_ISSUER</span>
+<span class="key2">- name:</span> Import Developer ID cert
+  <span class="key2">run:</span> |
+    security create-keychain -p "" build.keychain
+    security default-keychain -s build.keychain
+    security unlock-keychain -p "" build.keychain
+    echo "$DEVELOPER_ID_P12" | base64 --decode &gt; c.p12
+    security import c.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+    security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+<span class="key2">- name:</span> Sign &amp; notarize
+  <span class="key2">run:</span> |
+    codesign --force --options runtime --timestamp --deep \
+      --sign "Developer ID Application: 你的名字 (TEAMID)" "$APP_PATH"
+    <span class="cmt"># …make-release-dmg.sh 生成 $DMG…</span>
+    echo "$AC_KEY_P8" | base64 --decode &gt; ac.p8
+    xcrun notarytool submit "$DMG" --key ac.p8 \
+      --key-id "$AC_KEY_ID" --issuer "$AC_ISSUER" --wait
+    xcrun stapler staple "$DMG"</code></pre>
+    </details>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">极高</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">$99/年 + 半天 CI 调试</span></span>
+      <span class="metric"><span class="ml">收益</span><span class="mv">首次打开零摩擦 · 信任度↑</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">.github/workflows/release.yml</span></span>
+    </div>
+  </div>
+
+  <!-- S2 universal -->
+  <div class="sol p1">
+    <div class="top"><span class="idx">02</span><h3>产出 Universal Binary 覆盖 Intel</h3><span class="prio p1">P1 · 高性价比</span></div>
+    <div class="why neutral"><b>疑似根因：</b><code>project.yml</code> 写的是 <code>ONLY_ACTIVE_ARCH_Release: "NO"</code>——这<b>不是有效的 build setting key</b>（正确应为 <code>configs.Release.ONLY_ACTIVE_ARCH</code>），很可能被静默忽略。叠加 CI build 未显式指定 <code>ARCHS</code>，于是 Apple Silicon 的 <code>macos-15</code> runner 只产出 arm64，把 Intel 用户拦在门外。</div>
+    <div class="fix"><b>方案：</b>修正配置写法 + 在 Release build 显式 <code>ARCHS="arm64 x86_64"</code>，一份 DMG 通吃全部 Mac。<b>几乎零成本</b>（改两处配置），是性价比最高的 quick win。</div>
+    <details>
+      <summary>两处改动 + 一行校验</summary>
+<pre><code><span class="cmt"># ① project.yml —— 用合法的 config 条件写法</span>
+<span class="key2">settings:</span>
+  <span class="key2">base:</span>
+    <span class="key2">ARCHS:</span> <span class="str">"arm64 x86_64"</span>
+  <span class="key2">configs:</span>
+    <span class="key2">Release:</span>
+      <span class="key2">ONLY_ACTIVE_ARCH:</span> NO
+
+<span class="cmt"># ② release.yml Build 步骤显式声明（双保险）</span>
+xcodebuild build … ARCHS=<span class="str">"arm64 x86_64"</span> ONLY_ACTIVE_ARCH=NO
+
+<span class="cmt"># ③ 打包前校验，期望输出: arm64 x86_64</span>
+lipo -info "$APP_PATH/Contents/MacOS/Tic"</code></pre>
+    </details>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">高（覆盖 Intel 存量）</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">极低（改 2 处配置）</span></span>
+      <span class="metric"><span class="ml">前提</span><span class="mv">LunarSwift 走 SPM 源码编译，原生支持 x86_64</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">project.yml · release.yml</span></span>
+    </div>
+  </div>
+
+  <!-- S3 数据 -->
+  <div class="sol p1">
+    <div class="top"><span class="idx">03</span><h3>消除节假日数据「静默失效」</h3><span class="prio p1">P1 · 防雷</span></div>
+    <div class="why neutral"><b>问题：</b>内置数据止于 2026，离线优先后无联网刷新。一旦 2027 维护者遗忘发版，用户看到的是「整年无节假日标注」且<b>毫无提示</b>，会误判为应用出错。需在<b>不违背离线优先</b>的前提下兜住。</div>
+    <div class="fix"><b>方案（两个互补，皆轻量）：</b><br>
+      <b style="color:var(--green)">A · 应用内兜底提示</b>——浏览年份超出内置范围时，月历/设置给一条非阻断提示，避免误解。<br>
+      <b style="color:var(--green)">B · CI 数据哨兵</b>——定时探测上游 holiday-cn 是否已发布次年数据，若已发布而仓库未内置则自动开 Issue 提醒。保留「维护者发版」模式，仅消除「忘记」风险。</div>
+    <details>
+      <summary>A：HolidayStore 暴露覆盖范围（Swift）</summary>
+<pre><code><span class="cmt">// loadBundled() 内 apply(days:) 成功后追加：coveredYears.insert(year)</span>
+<span class="kw">private(set) var</span> coveredYears: Set&lt;Int&gt; = []
+
+<span class="cmt">/// 某年是否缺少官方调休数据（供 UI 做非阻断提示）。</span>
+<span class="kw">func</span> <span class="fn">isYearUncovered</span>(_ year: <span class="key2">Int</span>) -&gt; <span class="key2">Bool</span> {
+    !coveredYears.isEmpty &amp;&amp; !coveredYears.contains(year)
+}
+<span class="cmt">// 月历头部：if HolidayStore.shared.isYearUncovered(viewedYear) { 显示「2027 放假安排待更新」}</span></code></pre>
+    </details>
+    <details>
+      <summary>B：定时哨兵 workflow（每周探测次年数据）</summary>
+<pre><code><span class="key2">on:</span>
+  <span class="key2">schedule:</span>
+    - <span class="key2">cron:</span> <span class="str">"0 1 * * 1"</span>   <span class="cmt"># 每周一</span>
+<span class="key2">jobs:</span>
+  <span class="key2">probe:</span>
+    <span class="key2">runs-on:</span> ubuntu-latest
+    <span class="key2">steps:</span>
+      - <span class="key2">uses:</span> actions/checkout@v4
+      - <span class="key2">run:</span> |
+          NEXT=$(( $(date +%Y) + 1 ))
+          [ -f "Tic/Resources/holidays/$NEXT.json" ] &amp;&amp; exit 0
+          URL="https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/$NEXT.json"
+          if curl -fsSL "$URL" -o /tmp/n.json; then
+            gh issue create --title "内置 $NEXT 年调休数据" \
+              --body "上游已发布 $NEXT 年安排，请落入 Resources 并发版。"
+          fi
+        <span class="key2">env:</span> { <span class="key2">GH_TOKEN:</span> "${{ secrets.GITHUB_TOKEN }}" }</code></pre>
+    </details>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">中（防长期口碑塌方）</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">低（~半天）</span></span>
+      <span class="metric"><span class="ml">原则</span><span class="mv">不破坏离线优先</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">HolidayStore.swift · 新增 workflow</span></span>
+    </div>
+  </div>
+
+  <!-- S4 截图 -->
+  <div class="sol p1">
+    <div class="top"><span class="idx">04</span><h3>补齐 README 截图与首屏</h3><span class="prio p1">P1 · 低成本高转化</span></div>
+    <div class="why neutral"><b>问题：</b>README 截图区是占位且被注释，<code>docs/images/</code> 为空。开源项目的 Star 转化几乎全靠首屏第一眼，当前等于「白屏迎客」。</div>
+    <div class="fix"><b>方案：</b>运行应用截 3 张关键图（菜单栏标签、日历弹窗、设置页），录一段键盘导航 GIF，填进 README 并取消注释。本质是「营销物料」，<b>1 小时内可完成</b>，ROI 极高。</div>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">中（首屏转化）</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">极低（&lt;1h）</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">README.md · docs/images/</span></span>
+    </div>
+  </div>
+
+  <!-- S5 测试 -->
+  <div class="sol p2">
+    <div class="top"><span class="idx">05</span><h3>延伸测试到当前盲区</h3><span class="prio p2">P2 · 稳健</span></div>
+    <div class="why neutral"><b>问题：</b>19 个测试只覆盖日历逻辑层。菜单栏文案拼装、HolidayStore 越界年份、UpdateService 边界（预发布 tag / 版本相等）等纯逻辑盲区无回归保护——而更新功能此前正因缺测试连发多个调试版本。</div>
+    <div class="fix"><b>方案：</b>优先补「纯逻辑可测」盲区（<code>MenuBarDisplayComposer</code> 拼装、<code>HolidayStore.isYearUncovered</code>、<code>UpdateService</code> 边界），而非急于上 XCUITest——CI 已就绪，收益快且稳。</div>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">中（重构信心）</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">低（增量）</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">TicTests/</span></span>
+    </div>
+  </div>
+
+  <!-- S6 全局快捷键 -->
+  <div class="sol p2">
+    <div class="top"><span class="idx">06</span><h3>补齐全局快捷键 K1</h3><span class="prio p2">P2 · 体验闭环</span></div>
+    <div class="why neutral"><b>问题：</b><code>plan.md</code> 与 README「已知限制」都点名、却仍未实现的唯一「功能型」缺口——唤起日历必须先点菜单栏图标。设置页快捷键分区已有占位，体验差一口气。</div>
+    <div class="fix"><b>方案：</b>用全局热键注册（<code>NSEvent</code> 全局监听 / Carbon <code>RegisterEventHotKey</code> 或 MASShortcut 类库），接到现有弹窗锚定逻辑（<code>MenuBarPopoverWindowAnchor</code>），并在快捷键设置页提供录制控件。</div>
+    <div class="metrics">
+      <span class="metric"><span class="ml">影响</span><span class="mv">中（补齐承诺）</span></span>
+      <span class="metric"><span class="ml">成本</span><span class="mv">中（1–2 天）</span></span>
+      <span class="metric"><span class="ml">触点</span><span class="mv">ShortcutsSettingsVC · 弹窗锚定</span></span>
+    </div>
+  </div>
+
+  <!-- ============ MATRIX ============ -->
+  <h2>优先级矩阵 · 影响 × 成本</h2>
+  <div class="matrix">
+    <div class="mgrid">
+      <div class="axis-y">影响（高 → 低）</div>
+      <div class="quad win"><div class="qt">⚡ 立即做 · Quick Wins</div>
+        <div class="item"><span class="mini prio p1">02</span>Universal Binary（改 2 处配置）</div>
+        <div class="item"><span class="mini prio p1">04</span>README 截图（&lt;1h）</div>
+        <div class="item"><span class="mini prio p1">03</span>数据兜底提示（半天）</div>
+      </div>
+      <div class="quad invest"><div class="qt">★ 重点投入</div>
+        <div class="item"><span class="mini prio p0">01</span>Apple 公证（$99/年 + CI）</div>
+      </div>
+      <div class="quad fill"><div class="qt">○ 顺手补齐</div>
+        <div class="item"><span class="mini prio p2">05</span>测试延伸到盲区</div>
+        <div class="item"><span class="mini prio p1">03</span>CI 数据哨兵 workflow</div>
+      </div>
+      <div class="quad later"><div class="qt">◷ 排期推进</div>
+        <div class="item"><span class="mini prio p2">06</span>全局快捷键 K1</div>
+        <div class="item" style="opacity:.7"><span class="mini" style="background:var(--surface-3);color:var(--faint)">—</span>强调色 A2 · 弹窗位置 A3</div>
+      </div>
+      <div class="axis-x">成本（低 → 高）</div>
+    </div>
+  </div>
+
+  <!-- ============ ROADMAP ============ -->
+  <h2>落地路线图</h2>
+  <div class="timeline">
+    <div class="phase now">
+      <span class="pwhen">本周 · QUICK WINS</span>
+      <div class="ptitle">把「白白流失」的体验补回来</div>
+      <ul>
+        <li>修正 <code>ONLY_ACTIVE_ARCH</code> 写法 + 显式 <code>ARCHS</code> → 产出 Universal Binary</li>
+        <li>运行应用截 3 张图 + 1 段 GIF，填进 README</li>
+        <li>HolidayStore 暴露 <code>coveredYears</code>，月历加年份兜底提示</li>
+      </ul>
+    </div>
+    <div class="phase mid">
+      <span class="pwhen">本月 · 信任 & 可持续</span>
+      <div class="ptitle">迈过「发布级成品」门槛</div>
+      <ul>
+        <li>注册 Apple Developer，接入 Developer ID 签名 + 公证 + 装订</li>
+        <li>公证后删除 README 的 Gatekeeper 应急说明</li>
+        <li>新增 CI 数据哨兵 workflow，补 MenuBarComposer / UpdateService 边界测试</li>
+      </ul>
+    </div>
+    <div class="phase next">
+      <span class="pwhen">后续 · 体验增强</span>
+      <div class="ptitle">从「够用」走向「好用」</div>
+      <ul>
+        <li>全局快捷键 K1（兑现「已知限制」承诺）</li>
+        <li>强调色 A2、弹窗位置 A3 等设置增强项</li>
+        <li>视采用度评估是否引入可选的联网数据刷新（设计文档已备）</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <span>Tic 产品状态评估 · 生成于 2026-06-13</span>
+    <span>评分基于代码静态分析与一次完整测试运行，非用户采用度数据</span>
+  </footer>
+</div>
+
+<script>
+  const dims = [
+    {k:'功能完整度', s:8.5},
+    {k:'代码架构',   s:8.5},
+    {k:'文档质量',   s:9.0},
+    {k:'测试与 CI',  s:7.0},
+    {k:'隐私安全',   s:9.0},
+    {k:'分发成熟度', s:5.0},
+    {k:'数据可持续', s:6.0},
+  ];
+  const color = s => s>=8.5 ? '#30d158' : s>=7 ? '#0a84ff' : s>=6 ? '#ffd60a' : '#ff453a';
+
+  /* ---- hero ring ---- */
+  (function(){
+    const r=62, c=2*Math.PI*r, pct=7.5/10;
+    const ring=document.getElementById('scoreRing');
+    ring.style.strokeDasharray=c;
+    ring.style.strokeDashoffset=c;
+    requestAnimationFrame(()=>{ ring.style.transition='stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)';
+      ring.style.strokeDashoffset=c*(1-pct); });
+  })();
+
+  /* ---- radar ---- */
+  (function(){
+    const svg=document.getElementById('radar');
+    const cx=150, cy=150, R=110, N=dims.length, NS='http://www.w3.org/2000/svg';
+    const ang=i=>-Math.PI/2 + i*2*Math.PI/N;
+    const pt=(i,rad)=>[cx+rad*Math.cos(ang(i)), cy+rad*Math.sin(ang(i))];
+    const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+
+    [0.25,0.5,0.75,1].forEach(f=>{
+      let p=dims.map((_,i)=>pt(i,R*f).join(',')).join(' ');
+      svg.appendChild(mk('polygon',{points:p,fill:'none',stroke:'rgba(255,255,255,.08)','stroke-width':1}));
+    });
+    dims.forEach((d,i)=>{
+      const [x,y]=pt(i,R);
+      svg.appendChild(mk('line',{x1:cx,y1:cy,x2:x,y2:y,stroke:'rgba(255,255,255,.08)','stroke-width':1}));
+      const [lx,ly]=pt(i,R+22);
+      const t=mk('text',{x:lx,y:ly,fill:'#9a9aa6','font-size':11,'text-anchor':
+        Math.abs(lx-cx)<6?'middle':(lx>cx?'start':'end'),'dominant-baseline':'middle'});
+      t.textContent=d.k; svg.appendChild(t);
+    });
+    const data=dims.map((d,i)=>pt(i,R*d.s/10));
+    const poly=mk('polygon',{points:data.map(p=>p.join(',')).join(' '),
+      fill:'rgba(10,132,255,.18)',stroke:'#0a84ff','stroke-width':2,'stroke-linejoin':'round'});
+    svg.appendChild(poly);
+    data.forEach((p,i)=>svg.appendChild(mk('circle',{cx:p[0],cy:p[1],r:3.5,fill:color(dims[i].s)})));
+  })();
+
+  /* ---- bars ---- */
+  (function(){
+    const box=document.getElementById('bars');
+    dims.forEach((d,i)=>{
+      const row=document.createElement('div'); row.className='bar-row';
+      row.innerHTML=`<div class="bk">${d.k}</div>
+        <div class="bar-track"><div class="bar-fill" style="background:${color(d.s)}"></div></div>
+        <div class="bv" style="color:${color(d.s)}">${d.s.toFixed(1)}</div>`;
+      box.appendChild(row);
+      const fill=row.querySelector('.bar-fill');
+      requestAnimationFrame(()=>setTimeout(()=>fill.style.width=(d.s*10)+'%', 80*i));
+    });
+  })();
+</script>
+</body>
+</html>

@@ -123,4 +123,115 @@ final class TicTests: XCTestCase {
         XCTAssertEqual(service.stripVersionPrefix("v1.2.4"), "1.2.4")
         XCTAssertEqual(service.stripVersionPrefix("1.2.4"), "1.2.4")
     }
+
+    func testUpdateServiceParsesFullRelease() throws {
+        let json = Data("""
+        {"tag_name":"v1.3.0","name":"Tic 1.3.0","body":"修复若干问题",\
+        "html_url":"https://github.com/NicCraver/tic/releases/tag/v1.3.0",\
+        "published_at":"2026-06-10T08:00:00Z"}
+        """.utf8)
+        let release = try UpdateService().parseRelease(data: json)
+        XCTAssertEqual(release.tagName, "v1.3.0")
+        XCTAssertEqual(release.name, "Tic 1.3.0")
+        XCTAssertEqual(release.body, "修复若干问题")
+        XCTAssertEqual(release.htmlURL.absoluteString, "https://github.com/NicCraver/tic/releases/tag/v1.3.0")
+        XCTAssertNotNil(release.publishedAt)
+    }
+
+    func testUpdateServiceParseFallsBackWhenOptionalFieldsMissing() throws {
+        // 缺 name / body / published_at：name 回退 tag_name，body 为空串，publishedAt 为 nil
+        let json = Data(#"{"tag_name":"v1.2.7","html_url":"https://github.com/NicCraver/tic/releases/tag/v1.2.7"}"#.utf8)
+        let release = try UpdateService().parseRelease(data: json)
+        XCTAssertEqual(release.name, "v1.2.7")
+        XCTAssertEqual(release.body, "")
+        XCTAssertNil(release.publishedAt)
+    }
+
+    func testUpdateServiceParseThrowsWhenTagMissing() {
+        let json = Data(#"{"html_url":"https://github.com/NicCraver/tic/releases"}"#.utf8)
+        XCTAssertThrowsError(try UpdateService().parseRelease(data: json)) { error in
+            guard case UpdateError.parseError = error else {
+                return XCTFail("期望 parseError，实际：\(error)")
+            }
+        }
+    }
+
+    func testUpdateServiceResponseSizeLimit() {
+        let service = UpdateService()
+        let small = Data(count: 1024)
+        let huge = Data(count: 600 * 1024)
+        XCTAssertTrue(service.isWithinLimit(contentLength: 1024, data: small))
+        XCTAssertTrue(service.isWithinLimit(contentLength: nil, data: small))
+        XCTAssertFalse(service.isWithinLimit(contentLength: nil, data: huge))          // 实际体积超限
+        XCTAssertFalse(service.isWithinLimit(contentLength: 600 * 1024, data: small))  // 声明长度超限
+    }
+
+    // MARK: - 菜单栏文案拼装（MenuBarDisplayComposer）
+
+    func testMenuBarWideningDigitsReplacesNumbersOnly() {
+        // 阿拉伯数字替换为占位最宽字形 8；汉字（月 / 日）与字母原样保留
+        XCTAssertEqual(MenuBarDisplayComposer.wideningDigits(in: "12:30"), "88:88")
+        XCTAssertEqual(MenuBarDisplayComposer.wideningDigits(in: "5月27日"), "8月88日")
+        XCTAssertEqual(MenuBarDisplayComposer.wideningDigits(in: "AM"), "AM")
+    }
+
+    func testMenuBarShowsIconRequiresOrderAndEnabled() {
+        XCTAssertTrue(MenuBarDisplayComposer.showsIcon(order: [.icon, .time], enabled: [.icon, .time]))
+        XCTAssertFalse(MenuBarDisplayComposer.showsIcon(order: [.icon, .time], enabled: [.time]))
+        XCTAssertFalse(MenuBarDisplayComposer.showsIcon(order: [.time], enabled: [.icon, .time]))
+    }
+
+    func testMenuBarComposeJoinsEnabledBlocksInOrder() {
+        let date = middayDate(2026, 5, 27)  // 周三
+        XCTAssertEqual(
+            MenuBarDisplayComposer.compose(
+                date: date,
+                order: [.date, .weekday, .time],
+                enabled: [.date, .weekday],
+                showSeconds: false,
+                use24Hour: true
+            ),
+            "5月27日 周三"  // time 未启用，不出现
+        )
+        XCTAssertEqual(
+            MenuBarDisplayComposer.compose(
+                date: date,
+                order: [.date, .time],
+                enabled: [.date, .time],
+                showSeconds: false,
+                use24Hour: true
+            ),
+            "5月27日 12:00"
+        )
+    }
+
+    func testMenuBarComposeExcludesIconBlock() {
+        let date = middayDate(2026, 5, 27)
+        XCTAssertEqual(
+            MenuBarDisplayComposer.compose(
+                date: date,
+                order: [.icon, .date],
+                enabled: [.icon, .date],
+                showSeconds: false,
+                use24Hour: true
+            ),
+            "5月27日"  // icon 不计入文本
+        )
+    }
+
+    // MARK: - HolidayStore 覆盖年份
+
+    func testHolidayStoreReportsBundledCoverage() {
+        XCTAssertEqual(HolidayStore.shared.maxCoveredYear, 2026)
+        XCTAssertFalse(HolidayStore.shared.isYearUncovered(2026))
+        XCTAssertTrue(HolidayStore.shared.isYearUncovered(2027))
+        XCTAssertTrue(HolidayStore.shared.isYearUncovered(2023))
+    }
+
+    /// 系统时区当地中午，避免 `DateFormatter`（默认系统时区）在 UTC CI 上跨日。
+    private func middayDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12))!
+    }
 }
