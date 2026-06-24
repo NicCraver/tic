@@ -161,18 +161,20 @@ final class UpdateChecker {
                     UpdateCheckingIndicator.shared.dismiss()
                 }
 
-                let choice = UpdatePrompt.showUpdateAvailable(
-                    release: release,
-                    version: version,
-                    currentVersion: UpdateService.currentVersion,
-                    automatic: automatic
-                )
                 recordCheckTime()
-                if choice == .later {
-                    UserDefaults.standard.set(version, forKey: dismissedVersionKey)
-                } else if choice == .download {
-                    UserDefaults.standard.removeObject(forKey: dismissedVersionKey)
-                }
+                UpdateAvailablePanel.show(
+                    release: release,
+                    currentVersion: UpdateService.currentVersion,
+                    version: version,
+                    onDismiss: { [self] completed in
+                        guard automatic else { return }
+                        if completed {
+                            UserDefaults.standard.removeObject(forKey: dismissedVersionKey)
+                        } else {
+                            UserDefaults.standard.set(version, forKey: dismissedVersionKey)
+                        }
+                    }
+                )
             } else {
                 recordCheckTime()
                 if !automatic {

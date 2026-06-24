@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-06-24
+
+### Added
+
+- 恢复应用内 DMG 自动下载：`UpdateAvailableView`、`UpdateDownloadManager`、`TrustedDownloadPolicy`
+- 更新下载安全策略单元测试（域名白名单、CDN 重定向、路径穿越）
+
+### Changed
+
+- 发现新版本后自动下载 DMG、显示进度并在完成后打开安装镜像（不再跳转浏览器）
+- 保留每日 10:00 自动检查、启动补检与「稍后不再提醒」逻辑
+
 ## [1.3.0] - 2026-06-24
 
 ### Added
@@ -126,7 +138,9 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.2.6...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/NicCraver/tic/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/NicCraver/tic/compare/v1.2.6...v1.3.0
 [1.2.6]: https://github.com/NicCraver/tic/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/NicCraver/tic/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/NicCraver/tic/compare/v1.2.3...v1.2.4

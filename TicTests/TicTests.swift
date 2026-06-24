@@ -166,6 +166,34 @@ final class TicTests: XCTestCase {
         XCTAssertFalse(service.isWithinLimit(contentLength: 600 * 1024, data: small))  // 声明长度超限
     }
 
+    // MARK: - 更新下载安全策略
+
+    func testTrustedReleaseAssetURLAcceptsOfficialDMG() {
+        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
+        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testTrustedReleaseAssetURLRejectsWrongVersion() {
+        let url = URL(string: "https://github.com/NicCraver/tic/releases/download/v1.2.4/Tic-v9.9.9-macOS.dmg")!
+        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testTrustedReleaseAssetURLRejectsForeignHost() {
+        let url = URL(string: "https://evil.example.com/NicCraver/tic/releases/download/v1.2.4/Tic-v1.2.4-macOS.dmg")!
+        XCTAssertFalse(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.4"))
+    }
+
+    func testTrustedReleaseAssetURLAcceptsGitHubCDNRedirect() {
+        let url = URL(string: "https://release-assets.githubusercontent.com/github-production-release-asset/1252199363/abc?response-content-disposition=attachment%3B%20filename%3DTic-v1.2.5-macOS.dmg")!
+        XCTAssertTrue(TrustedDownloadPolicy.isTrustedReleaseAssetURL(url, expectedVersion: "1.2.5"))
+    }
+
+    func testSafeDestinationURLRejectsPathTraversal() {
+        let downloads = FileManager.default.temporaryDirectory
+        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "../Tic-v1.0.0-macOS.dmg", in: downloads))
+        XCTAssertNil(TrustedDownloadPolicy.safeDestinationURL(filename: "foo/bar.dmg", in: downloads))
+    }
+
     // MARK: - 菜单栏文案拼装（MenuBarDisplayComposer）
 
     func testMenuBarWideningDigitsReplacesNumbersOnly() {

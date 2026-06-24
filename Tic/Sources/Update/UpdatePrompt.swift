@@ -99,11 +99,6 @@ final class UpdateCheckingIndicator {
     }
 }
 
-enum UpdatePromptChoice {
-    case download
-    case later
-}
-
 @MainActor
 enum UpdatePrompt {
     static func showUpToDate(currentVersion: String) {
@@ -113,34 +108,6 @@ enum UpdatePrompt {
         alert.alertStyle = .informational
         alert.addButton(withTitle: "好")
         alert.runModal()
-    }
-
-    @discardableResult
-    static func showUpdateAvailable(
-        release: GitHubRelease,
-        version: String,
-        currentVersion: String,
-        automatic: Bool = false
-    ) -> UpdatePromptChoice {
-        let notes = ReleaseNotesFormatter.displayText(from: release.body, maxLength: 400)
-        let notesBlock = notes.isEmpty ? "" : "\n\n\(notes)"
-        let intro = automatic
-            ? "Tic 有新版本可用。"
-            : "发现新版本 \(version)"
-
-        let alert = NSAlert()
-        alert.messageText = intro
-        alert.informativeText =
-            "当前版本：\(currentVersion)\n最新版本：\(version)\(notesBlock)\n\n请在浏览器中下载 DMG，拖入「应用程序」完成更新。"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "前往下载")
-        alert.addButton(withTitle: "稍后")
-
-        if alert.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(release.htmlURL)
-            return .download
-        }
-        return .later
     }
 
     static func showError(_ error: Error) {
