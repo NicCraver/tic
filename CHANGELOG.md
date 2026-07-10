@@ -144,7 +144,8 @@
 - 登录时自动启动
 - macOS 应用图标
 
-[Unreleased]: https://github.com/NicCraver/tic/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/NicCraver/tic/compare/v1.3.2...HEAD
+[1.3.2]: https://github.com/NicCraver/tic/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/NicCraver/tic/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/NicCraver/tic/compare/v1.2.6...v1.3.0
 [1.2.6]: https://github.com/NicCraver/tic/compare/v1.2.5...v1.2.6
