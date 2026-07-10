@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-10
+
+### Fixed
+
+- 重新打开日历弹窗时回到今天，不再残留上次选中的日期（[#2](https://github.com/NicCraver/tic/issues/2)）
+
 ## [1.3.1] - 2026-06-24
 
 ### Added

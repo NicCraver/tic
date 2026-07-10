@@ -256,6 +256,28 @@ final class TicTests: XCTestCase {
         XCTAssertTrue(HolidayStore.shared.isYearUncovered(2023))
     }
 
+    // MARK: - 日历弹窗选中态重置（Issue #2）
+
+    func testCalendarPopoverSelectionTodayUsesStartOfDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "zh_CN")
+        let afternoon = calendar.date(from: DateComponents(year: 2026, month: 7, day: 10, hour: 15, minute: 30))!
+        let selection = CalendarPopoverSelection.today(now: afternoon, calendar: calendar)
+        let expected = calendar.startOfDay(for: afternoon)
+        XCTAssertEqual(selection.selectedDate, expected)
+        XCTAssertEqual(selection.displayedMonth, expected)
+    }
+
+    func testCalendarPopoverSelectionTodayDiffersFromPreviousSelection() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "zh_CN")
+        let today = calendar.date(from: DateComponents(year: 2026, month: 7, day: 10, hour: 9))!
+        let previous = calendar.date(from: DateComponents(year: 2026, month: 6, day: 1))!
+        let reset = CalendarPopoverSelection.today(now: today, calendar: calendar)
+        XCTAssertFalse(calendar.isDate(reset.selectedDate, inSameDayAs: previous))
+        XCTAssertTrue(calendar.isDate(reset.selectedDate, inSameDayAs: today))
+    }
+
     /// 系统时区当地中午，避免 `DateFormatter`（默认系统时区）在 UTC CI 上跨日。
     private func middayDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
         var calendar = Calendar(identifier: .gregorian)

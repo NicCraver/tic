@@ -150,6 +150,12 @@ struct CalendarPopoverView: View {
         .onAppear {
             refreshCalendarData(displayedMonth: displayedMonth, selectedDate: selectedDate)
         }
+        .background {
+            MenuBarWindowVisibilityObserver {
+                // MenuBarExtra 会保留 @State；主窗从隐藏到显示时回到今天（Issue #2）。
+                resetSelectionToToday()
+            }
+        }
         .onChange(of: showSolarTerms) {
             refreshCalendarData(displayedMonth: displayedMonth, selectedDate: selectedDate)
         }
@@ -219,15 +225,30 @@ struct CalendarPopoverView: View {
     }
 
     private func goToToday() {
-        let today = startOfDay(.now)
-        let nextMonthSlots = monthSlots(for: today)
-        let nextUpcomingEvents = upcomingEvents(from: today)
-        withOptionalAnimation(.easeInOut(duration: 0.18)) {
-            selectedDate = today
-            displayedMonth = today
+        applyTodaySelection(animated: true)
+    }
+
+    /// 重新打开弹窗时回到今天（Issue #2）；无动画，避免闪一下。
+    private func resetSelectionToToday() {
+        applyTodaySelection(animated: false)
+    }
+
+    private func applyTodaySelection(animated: Bool) {
+        let today = CalendarPopoverSelection.today(now: .now, calendar: calendar)
+        let nextMonthSlots = monthSlots(for: today.displayedMonth)
+        let nextUpcomingEvents = upcomingEvents(from: today.selectedDate)
+        let updates = {
+            selectedDate = today.selectedDate
+            displayedMonth = today.displayedMonth
             monthSlots = nextMonthSlots
             upcomingEvents = nextUpcomingEvents
-            pickerYear = calendar.component(.year, from: today)
+            pickerYear = calendar.component(.year, from: today.selectedDate)
+            isMonthPickerPresented = false
+        }
+        if animated {
+            withOptionalAnimation(.easeInOut(duration: 0.18), updates)
+        } else {
+            updates()
         }
     }
 

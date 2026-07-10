@@ -44,8 +44,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: me.nic.tic
         CODE_SIGN_ENTITLEMENTS: Tic/Resources/Tic.entitlements
         PRODUCT_NAME: Tic
-        MARKETING_VERSION: "1.3.1"
-        CURRENT_PROJECT_VERSION: "12"
+        MARKETING_VERSION: "1.3.2"
+        CURRENT_PROJECT_VERSION: "13"
         COMBINE_HIDPI_IMAGES: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     dependencies:
