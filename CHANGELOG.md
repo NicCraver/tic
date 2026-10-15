@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- 切换到行数不同的月份（5 行 ↔ 6 行）时弹窗被移到屏幕外：`MenuBarPopoverWindowAnchor` 在窗口 frame 仍为 `.zero` 时记录了顶边锚点 0，现只在窗口拥有落在屏幕上的有效 frame 时记录锚点，并兜底不把窗口挪出所有屏幕
+
 ## [1.3.2] - 2026-07-10
 
 ### Fixed
