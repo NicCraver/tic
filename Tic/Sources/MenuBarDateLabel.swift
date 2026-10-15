@@ -45,9 +45,9 @@ struct MenuBarDateLabel: View {
             if let labelImage {
                 Image(nsImage: labelImage)
                     .renderingMode(.template)
-                    .accessibilityLabel(metrics.displayText)
+                    .accessibilityLabel(metrics.displayText.isEmpty ? "Tic 日历" : metrics.displayText)
             } else {
-                Text(metrics.displayText)
+                Text(metrics.displayText.isEmpty ? MenuBarDisplayComposer.fallbackText : metrics.displayText)
                     .font(.menuBarLabel)
                     .monospacedDigit()
             }
@@ -107,12 +107,14 @@ private struct MenuBarRenderedLabel: View {
                     .symbolRenderingMode(.monochrome)
                     .foregroundStyle(MenuBarTemplateStyle.foreground)
             }
-            Text(metrics.displayText)
-                .font(.menuBarLabel)
-                .monospacedDigit()
-                .foregroundStyle(MenuBarTemplateStyle.foreground)
-                .lineLimit(1)
-                .frame(width: metrics.textSlotWidth, alignment: .center)
+            if !metrics.displayText.isEmpty {
+                Text(metrics.displayText)
+                    .font(.menuBarLabel)
+                    .monospacedDigit()
+                    .foregroundStyle(MenuBarTemplateStyle.foreground)
+                    .lineLimit(1)
+                    .frame(width: metrics.textSlotWidth, alignment: .center)
+            }
         }
         .frame(width: metrics.labelWidth, height: 22)
     }

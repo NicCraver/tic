@@ -48,7 +48,7 @@ enum MenuBarDisplayComposer {
             showSeconds: showSeconds,
             use24Hour: use24Hour
         )
-        let base = text.isEmpty ? "Tic" : text
+        let base = text.isEmpty && !showsIcon(order: order, enabled: enabled) ? fallbackText : text
         return wideningDigits(in: base)
     }
 
@@ -85,6 +85,9 @@ enum MenuBarDisplayComposer {
             .compactMap { segment(for: $0, date: date, showSeconds: showSeconds, use24Hour: use24Hour) }
             .joined(separator: " ")
     }
+
+    /// 既无图标也无文字时的兜底文案，保证状态栏项可见、可点击。
+    static let fallbackText = "Tic"
 
     static func showsIcon(order: [MenuBarBlock], enabled: Set<MenuBarBlock>) -> Bool {
         enabled.contains(.icon) && order.contains(.icon)

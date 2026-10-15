@@ -209,6 +209,41 @@ final class TicTests: XCTestCase {
         XCTAssertFalse(MenuBarDisplayComposer.showsIcon(order: [.time], enabled: [.icon, .time]))
     }
 
+    func testNormalizedBlockOrderAppendsMissingBlocksKeepingUserOrder() {
+        // 旧版迁移只写入 date,time；图标等缺失块需补到末尾，否则勾选图标后状态栏不显示
+        XCTAssertEqual(
+            AppSettings.normalizedBlockOrder([.date, .time]),
+            [.date, .time, .icon, .weekday, .weekNumber, .lunar]
+        )
+        XCTAssertEqual(AppSettings.normalizedBlockOrder([.time, .time, .date]).prefix(2), [.time, .date])
+    }
+
+    func testMenuBarIconOnlyHasNoFallbackText() {
+        let defaults = UserDefaults.standard
+        let keys = [AppSettings.menuBarBlockOrderKey, AppSettings.menuBarEnabledBlocksKey]
+        let saved = keys.map { defaults.object(forKey: $0) }
+        defer { zip(keys, saved).forEach { defaults.set($1, forKey: $0) } }
+
+        defaults.set("date,time", forKey: AppSettings.menuBarBlockOrderKey)
+        defaults.set("icon", forKey: AppSettings.menuBarEnabledBlocksKey)
+        let metrics = MenuBarLabelMetrics.current(date: middayDate(2026, 5, 27))
+        XCTAssertTrue(metrics.showsIcon)
+        XCTAssertEqual(metrics.displayText, "")
+        XCTAssertEqual(metrics.textSlotWidth, 0)
+        XCTAssertEqual(metrics.labelWidth, MenuBarDisplayComposer.menuBarIconWidth)
+    }
+
+    func testMenuBarFallsBackToAppNameWithoutIconOrText() {
+        XCTAssertEqual(
+            MenuBarDisplayComposer.sizingText(order: [.date], enabled: [], showSeconds: false, use24Hour: true),
+            MenuBarDisplayComposer.fallbackText
+        )
+        XCTAssertEqual(
+            MenuBarDisplayComposer.sizingText(order: [.icon], enabled: [.icon], showSeconds: false, use24Hour: true),
+            ""
+        )
+    }
+
     func testMenuBarComposeJoinsEnabledBlocksInOrder() {
         let date = middayDate(2026, 5, 27)  // 周三
         XCTAssertEqual(

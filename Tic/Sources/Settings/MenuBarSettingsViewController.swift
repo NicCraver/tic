@@ -11,7 +11,7 @@ final class MenuBarSettingsViewController: SettingsPaneViewController {
     private let previewLabel = NSTextField(labelWithString: "")
 
     init() {
-        blockOrder = Self.normalizedOrder(AppSettings.loadBlockOrder())
+        blockOrder = AppSettings.loadBlockOrder()
         enabledBlocks = AppSettings.loadEnabledBlocks()
         super.init(title: "菜单栏")
     }
@@ -138,7 +138,7 @@ final class MenuBarSettingsViewController: SettingsPaneViewController {
 
     @objc private func resetOrder() {
         AppSettings.resetMenuBarLayout()
-        blockOrder = Self.normalizedOrder(AppSettings.loadBlockOrder())
+        blockOrder = AppSettings.loadBlockOrder()
         enabledBlocks = AppSettings.loadEnabledBlocks()
         rebuildBlocks()
         updatePreview()
@@ -215,14 +215,6 @@ final class MenuBarSettingsViewController: SettingsPaneViewController {
         )
         button.setContentHuggingPriority(.required, for: .horizontal)
         return button
-    }
-
-    private static func normalizedOrder(_ order: [MenuBarBlock]) -> [MenuBarBlock] {
-        var result = order
-        for block in MenuBarBlock.allCases where !result.contains(block) {
-            result.append(block)
-        }
-        return result
     }
 
     private static func tag(for block: MenuBarBlock) -> Int {

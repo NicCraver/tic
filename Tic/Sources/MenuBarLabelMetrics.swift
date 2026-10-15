@@ -19,11 +19,15 @@ struct MenuBarLabelMetrics {
             showSeconds: showSeconds,
             use24Hour: use24Hour
         )
-        let textSlotWidth = MenuBarDisplayComposer.reservedTextWidth(for: sizingText)
+        let showsIcon = MenuBarDisplayComposer.showsIcon(order: order, enabled: enabled)
+        let textSlotWidth = sizingText.isEmpty ? 0 : MenuBarDisplayComposer.reservedTextWidth(for: sizingText)
 
         var labelWidth = textSlotWidth
-        if MenuBarDisplayComposer.showsIcon(order: order, enabled: enabled) {
-            labelWidth += MenuBarDisplayComposer.menuBarIconWidth + MenuBarDisplayComposer.iconTextSpacing
+        if showsIcon {
+            labelWidth += MenuBarDisplayComposer.menuBarIconWidth
+            if textSlotWidth > 0 {
+                labelWidth += MenuBarDisplayComposer.iconTextSpacing
+            }
         }
         labelWidth += MenuBarDisplayComposer.labelHorizontalInset * 2
 
@@ -38,10 +42,10 @@ struct MenuBarLabelMetrics {
         let interval: TimeInterval = enabled.contains(.time) && showSeconds ? 1 : 60
 
         return MenuBarLabelMetrics(
-            displayText: composed.isEmpty ? "Tic" : composed,
+            displayText: composed.isEmpty && !showsIcon ? MenuBarDisplayComposer.fallbackText : composed,
             textSlotWidth: textSlotWidth,
             labelWidth: labelWidth,
-            showsIcon: MenuBarDisplayComposer.showsIcon(order: order, enabled: enabled),
+            showsIcon: showsIcon,
             updateInterval: interval
         )
     }

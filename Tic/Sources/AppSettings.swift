@@ -95,12 +95,21 @@ enum AppSettings {
         saveEnabledBlocks(enabled)
     }
 
+    /// 读取排序并补全缺失的块（旧版迁移只写入 `date,time`），与设置页展示的顺序保持一致。
     static func loadBlockOrder() -> [MenuBarBlock] {
         guard let raw = UserDefaults.standard.string(forKey: menuBarBlockOrderKey) else {
             return MenuBarBlock.defaultOrder
         }
         let blocks = raw.split(separator: ",").compactMap { MenuBarBlock(rawValue: String($0)) }
-        return blocks.isEmpty ? MenuBarBlock.defaultOrder : blocks
+        return blocks.isEmpty ? MenuBarBlock.defaultOrder : normalizedBlockOrder(blocks)
+    }
+
+    static func normalizedBlockOrder(_ order: [MenuBarBlock]) -> [MenuBarBlock] {
+        var result: [MenuBarBlock] = []
+        for block in order + MenuBarBlock.allCases where !result.contains(block) {
+            result.append(block)
+        }
+        return result
     }
 
     static func saveBlockOrder(_ blocks: [MenuBarBlock]) {
